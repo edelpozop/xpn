@@ -4,8 +4,8 @@
 #--------------------------
 
  MAKE         = make -s
- CC           = /usr/bin/mpicc
- EXPAND_DIR   = /home/elias/bin//xpn
+ CC           = mpicc
+ EXPAND_DIR   = /usr/local
  OBJECTS_TCP_SERVER  = tcp_server.o \
 		       tcp_server_utils.o \
 		       tcp_server_params.o \
@@ -51,17 +51,18 @@ install: $(TCP_SERVER_EXE)
 	$(CC) $(MYFLAGS) $(MYHEADERS) -c $< -o $@
 
 $(TCP_SERVER_EXE): $(OBJECTS_TCP_SERVER)
-	$(CC) -o $(TCP_SERVER_EXE)  $(OBJECTS_TCP_SERVER)  $(MYLIBS)
+	$(CC) -o $(TCP_SERVER_EXE)  $(OBJECTS_TCP_SERVER)  $(MYLIBS) 
 
 $(XPN2D_EXE): $(OBJECTS_XPN2D)
-	@$(CC) -o $(XPN2D_EXE)  $(OBJECTS_XPN2D) $(MYLIBS)
+	@$(CC) -o $(XPN2D_EXE)  $(OBJECTS_XPN2D) $(MYLIBS) 
 $(D2XPN_EXE): $(OBJECTS_D2XPN)
-	@$(CC) -o  $(D2XPN_EXE) $(OBJECTS_D2XPN) $(MYLIBS)
+	@$(CC) -o  $(D2XPN_EXE) $(OBJECTS_D2XPN) $(MYLIBS) 
 $(XPN2XPN_EXE): $(OBJECTS_XPN2XPN)
-	@$(CC) -o  $(XPN2XPN_EXE) $(OBJECTS_XPN2XPN)  $(MYLIBS)
+	@$(CC) -o  $(XPN2XPN_EXE) $(OBJECTS_XPN2XPN)  $(MYLIBS) 
 $(RMXPN_EXE): $(OBJECTS_RMXPN)
-	@$(CC) -o  $(RMXPN_EXE) $(OBJECTS_RMXPN)  $(MYLIBS)
+	@$(CC) -o  $(RMXPN_EXE) $(OBJECTS_RMXPN)  $(MYLIBS) 
 
 clean:
 	rm -f $(OBJECTS_TCP_SERVER) $(OBJECTS_D2XPN) $(OBJECTS_XPN2D) $(OBJECTS_RMXPN)
 	rm -f $(TCP_SERVER_EXE) $(D2XPN_EXE) $(XPN2D_EXE) $(RMXPN_EXE)
+

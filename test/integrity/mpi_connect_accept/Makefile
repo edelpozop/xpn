@@ -5,7 +5,7 @@
 #
 
  MAKE          = make -s
- CC            = /usr/bin/mpicc
+ CC            = mpicc
  LIB_PATH      = -L/usr/lib
  INCLUDE_PATH  = -I./
  SOURCE_PATH   = .

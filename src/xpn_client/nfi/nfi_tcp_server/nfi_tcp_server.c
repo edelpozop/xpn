@@ -1049,6 +1049,7 @@ ssize_t nfi_tcp_server_read(struct nfi_server * serv,
 
       /*****************************************/
       strcpy(msg.id, server_aux -> id);
+      strcpy(msg.u_st_tcp_server_msg.op_write.path, fh_aux -> path);
       msg.type = TCP_SERVER_WRITE_FILE;
       msg.u_st_tcp_server_msg.op_write.fd = fh_aux -> fd;
       msg.u_st_tcp_server_msg.op_write.offset = offset;
@@ -1108,7 +1109,7 @@ ssize_t nfi_tcp_server_read(struct nfi_server * serv,
         printf("jajaja1: %p %s\n", fh_aux, fh_aux->path);
         printf("jejeje2: %p %d\n", fh_aux, fh_aux->fd);
         //
-        sprintf(topic, "%d", fh_aux->fd);
+        sprintf(topic, "%s", fh_aux->path);
         sprintf(payload,"write|%d|%d|%d|", bytes_to_send, cont, i);
         printf("%s %s\n", topic, payload);
         // memmove(payload + 100, (char * )buffer + cont, bytes_to_send);
@@ -1297,12 +1298,12 @@ ssize_t nfi_tcp_server_read(struct nfi_server * serv,
 
       /*MOSQUITTO*/
 
-      char payload[255];
-      char topic[255];
+      char payload[100];
+      char topic[NFIMAXPATHLEN];
       int rc;
 
       sprintf(topic, "%d", fh_aux -> fd);
-      printf("%d\n\n",fh_aux->fd);
+      printf("%s %d\n\n", fh_aux -> path, fh_aux->fd);
       sprintf(payload, "creat");
 
       rc = mosquitto_publish(mosqstr, NULL, topic, strlen(payload), payload, 1, false);

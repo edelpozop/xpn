@@ -4,9 +4,9 @@
 #--------------------------
 
  MAKE                 = make -s
- CC                   = /usr/bin/mpicc
+ CC                   = mpicc
  SOURCE_PATH          = ./
- EXPAND_DIR           = /home/elias/bin//xpn
+ EXPAND_DIR           = /usr/local
  OBJECTS_MPI_SERVER   = ../../src/mpi_server/mpi_server.o \
 		        ../../src/mpi_server/mpi_server_params.o \
 		        ../../src/mpi_server/mpi_server_comm.o \

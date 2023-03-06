@@ -360,7 +360,7 @@ int XpnGetServer(struct conf_connect_st * fconf, __attribute__((__unused__)) str
     }
 
     serv -> block_size = part -> block_size; // Reference of the partition blocksize
-
+    printf("%s\n\n", prt);
     // crear conexion
     if (strcmp(prt, "file") == 0) {
         //printf("[XPN]nfi_local_init: %s\n",url);
@@ -399,7 +399,7 @@ int XpnGetServer(struct conf_connect_st * fconf, __attribute__((__unused__)) str
     // BEGIN OF ENABLE_TCP_SERVER BLOCK. Do not remove this line. //
     #ifdef ENABLE_TCP_SERVER
     else if (strcmp(prt, "tcp_server") == 0) {
-        //printf("[XPN]nfi_tcp_server_init: %s\n",url);
+        printf("[XPN]nfi_tcp_server_init: %s\n",url);
         ret = nfi_tcp_server_init(url, serv, NULL);
         if (ret < 0) {
             xpn_err(XPNERR_INITSERV);

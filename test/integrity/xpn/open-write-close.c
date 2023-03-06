@@ -25,7 +25,7 @@ int main ( int argc, char *argv[] )
 	printf("ANTES XPN_OPEN\n\n");
 
 	int fd = open("quijote.txt", O_RDONLY);
-  if (fd == -1) return -1;
+  	if (fd == -1) return -1;
 
 
 	fd1 = xpn_open("/xpn/copia_quijote.txt", O_CREAT|O_WRONLY, 00777);

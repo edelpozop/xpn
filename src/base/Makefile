@@ -231,11 +231,11 @@ AUTOCONF = ${SHELL} '/home/elias/Desktop/xpn/config/missing' autoconf
 AUTOHEADER = ${SHELL} '/home/elias/Desktop/xpn/config/missing' autoheader
 AUTOMAKE = ${SHELL} '/home/elias/Desktop/xpn/config/missing' automake-1.16
 AWK = mawk
-CC = /usr/bin/mpicc
+CC = mpicc
 CCDEPMODE = depmode=gcc3
-CDEFS = -D_REENTRANT -DPOSIX_THREADS -DHAVE_CONFIG_H -DLINUX -DXPNI_LOWFSI_XPN -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -DENABLE_MXML -DENABLE_TCP_SERVER -DENABLE_MPI_SERVER
+CDEFS = -D_REENTRANT -DPOSIX_THREADS -DHAVE_CONFIG_H -DLINUX -DXPNI_LOWFSI_XPN -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -DENABLE_MXML -DENABLE_TCP_SERVER
 CFLAGS =     -I../../mxml    -I../../xpn/include    -I../../xpn/include/xpn_client    -I../../xpn/include/base -I../../../mxml -I../../../xpn/include -I../../../xpn/include/xpn_client -I../../../xpn/include/base  -fPIC -O2 -g -g3 -ggdb -Wall -Wextra -std=c11
-CPPFLAGS = -D_REENTRANT -DPOSIX_THREADS -DHAVE_CONFIG_H -DLINUX -DXPNI_LOWFSI_XPN -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -DENABLE_MXML -DENABLE_TCP_SERVER -DENABLE_MPI_SERVER -I$(top_srcdir)/include -I$(top_srcdir)/include/base -I$(top_srcdir)/include/xpn_client/ -I$(top_srcdir)/include/xpn_client/xpn -I$(top_srcdir)/include/xpn_client/xpn/xpn_simple -I$(top_srcdir)/include/xpn_client/nfi -I$(top_srcdir)/include/xpn_client/nfi/nfi_local -I$(top_srcdir)/include/xpn_client/xpni/ -I$(top_srcdir)/include/xpn_client/xpni/common -I$(top_srcdir)/include/xpn_client/xpni/xpni_null -I$(top_srcdir)/include/xpn_client/xpni/xpni_ft -I$(top_srcdir)/include/xpn_client/xpni/xpni_log -I$(top_srcdir)/include/xpn_client/nfi/nfi_tcp_server -I$(top_srcdir)/include/xpn_client/nfi/nfi_mpi_server  
+CPPFLAGS = -D_REENTRANT -DPOSIX_THREADS -DHAVE_CONFIG_H -DLINUX -DXPNI_LOWFSI_XPN -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -DENABLE_MXML -DENABLE_TCP_SERVER -I$(top_srcdir)/include -I$(top_srcdir)/include/base -I$(top_srcdir)/include/xpn_client/ -I$(top_srcdir)/include/xpn_client/xpn -I$(top_srcdir)/include/xpn_client/xpn/xpn_simple -I$(top_srcdir)/include/xpn_client/nfi -I$(top_srcdir)/include/xpn_client/nfi/nfi_local -I$(top_srcdir)/include/xpn_client/xpni/ -I$(top_srcdir)/include/xpn_client/xpni/common -I$(top_srcdir)/include/xpn_client/xpni/xpni_null -I$(top_srcdir)/include/xpn_client/xpni/xpni_ft -I$(top_srcdir)/include/xpn_client/xpni/xpni_log -I$(top_srcdir)/include/xpn_client/nfi/nfi_tcp_server  
 CSCOPE = cscope
 CTAGS = ctags
 CYGPATH_W = echo
@@ -262,8 +262,8 @@ MAKE = make
 MAKEINFO = ${SHELL} '/home/elias/Desktop/xpn/config/missing' makeinfo
 MKDIR_P = /usr/bin/mkdir -p
 M_HEADERS = 
-NFI_MPI_SERVER = nfi_mpi_server
-NFI_MPI_SERVER_OBJECTS = $(NFI_MPI_SERVER_OBJECTS)
+NFI_MPI_SERVER = 
+NFI_MPI_SERVER_OBJECTS = 
 NFI_NFS = 
 NFI_NFS3 = 
 NFI_NFS3_OBJECTS = 
@@ -329,7 +329,7 @@ mandir = ${datarootdir}/man
 mkdir_p = $(MKDIR_P)
 oldincludedir = /usr/include
 pdfdir = ${docdir}
-prefix = /home/elias/bin//xpn
+prefix = /usr/local
 program_transform_name = s,x,x,
 psdir = ${docdir}
 runstatedir = ${localstatedir}/run
