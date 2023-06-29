@@ -19,133 +19,64 @@
  *
  */
 
+/**
+ * @file debug_msg.c
+ * @brief 'TODO'.
+ *
+ * 'TODO'.
+ *
+ * @authors Felix Garcia Carballeira, Diego Camarmas Alonso, Alejandro Calderon Mateos, Luis Miguel Sanchez Garcia, Borja Bergua Guerra
+ * @date  Jul 22, 2021
+ * @bug No known bugs.
+ * */
 
-   /* ... Include / Inclusion ........................................... */
+/************************************************
+ *  ... Includes
+ ***********************************************/
+#include "base/debug_msg.h"
 
-      #include "base/debug_msg.h"
+/************************************************
+ *  ... Functions
+ ***********************************************/
 
+void debug_msg_init(void)
+{
+      setbuf(stdout, NULL);
+      setbuf(stderr, NULL);
+}
 
-   /* ... Globla var. / Variables glob. ................................. */
+int debug_msg_printf(int src_type, long src_pid, char *src_fname, long src_line, FILE *fd, char *msg_fmt, ...)
+{
+      va_list valist;
+      int ret;
 
-      int    (*DEBUG_MSG_PrintMsg)(const char *, va_list) = NULL ;
-
-
-   /* ... Functions / Funciones ......................................... */
-
-      // Debug API
-      void debug_msg_init ( void )
+      va_start(valist, msg_fmt);
+      switch (src_type)
       {
-           setbuf(stdout, NULL) ;
-           setbuf(stderr, NULL) ;
+      case 3:
+            fprintf(fd, "[%ld][%s:%4ld] [INFO] ", src_pid, src_fname, src_line);
+            ret = vfprintf(fd, msg_fmt, valist);
+            break;
+
+      case 2:
+            fprintf(fd, "[%ld][%s:%4ld] [WARN] ", src_pid, src_fname, src_line);
+            ret = vfprintf(fd, msg_fmt, valist);
+            break;
+
+      case 1:
+            fprintf(fd, "[%ld][%s:%4ld] [ERROR] ", src_pid, src_fname, src_line);
+            ret = vfprintf(fd, msg_fmt, valist);
+            break;
+
+      default:
+            ret = vfprintf(fd, msg_fmt, valist);
+            break;
       }
+      va_end(valist);
 
-      int debug_msg_printf ( int src_type, char *src_fname, long src_line, FILE *fd, char *msg_fmt, ... )
-      {
-         va_list valist ;
-         int ret ;
-      
-         va_start(valist, msg_fmt) ;
-         switch (src_type)
-         {
-              case  3:
-                    fprintf(fd, "[%s:%4ld] [INFO] ", src_fname, src_line) ;
-                    ret = vfprintf(fd, msg_fmt, valist) ;
-                    break;
-      
-              case  2:
-                    fprintf(fd, "[%s:%4ld] [WARN] ", src_fname, src_line) ;
-                    ret = vfprintf(fd, msg_fmt, valist) ;
-                    break;
-      
-              case  1:
-                    fprintf(fd, "[%s:%4ld] [ERROR] ", src_fname, src_line) ;
-                    ret = vfprintf(fd, msg_fmt, valist) ;
-                    break;
-      
-              default:
-                    ret = vfprintf(fd, msg_fmt, valist) ;
-                    break;
-         }
-         va_end(valist) ;
-      
-         // fflush(fd) ;
-      
-         return ret ;
-      }
-      
+      // fflush(fd) ;
 
-      //
-      // Extra Debug API
-      //
+      return ret;
+}
 
-      void   DEBUG_MSG_setPrinter 
-      ( 
-        /*IN*/      int (*printer) (const char   *, va_list) 
-      )
-      {
-        DEBUG_MSG_PrintMsg = (  int (*)(const char   *, va_list)) printer ;
-      }
-
-      void   DEBUG_MSG_doPrint    
-      ( 
-        /*IN*/    char    *fto,
-        ... 
-      )
-      {
-        if (DEBUG_MSG_PrintMsg != NULL)
-           {
-             va_list vl ;
-
-             va_start(vl,fto) ;
-             (*DEBUG_MSG_PrintMsg)(fto,vl) ; 
-       	     va_end(vl) ;
-           }
-      }
-
-      void   DEBUG_MSG_VPrintF    
-      ( 
-        /*IN*/      int    line,
-        /*IN*/    char    *name,
-        /*IN*/     long    pid,
-        /*IN*/      int    type,
-        /*IN*/    char    *fto,
-        /*IN*/    va_list  vl 
-      )
-      {
-        if (DEBUG_MSG_PrintMsg != NULL)
-           {
-             char     *msg ;
-
-             msg = STRING_MISC_Dvsprintf(fto,vl) ;
-             DEBUG_MSG_doPrint("trace(%i,\"%s\",%li,%i,\"%s\").",
-                                  line,
-                                  name,
-                                  pid,
-                                  type,
-                                  msg) ;
-             free(msg) ;
-           }
-      }
-
-      void   DEBUG_MSG_PrintF     
-      ( 
-        /*IN*/      int    line,
-        /*IN*/    char    *name,
-        /*IN*/     long    pid,
-        /*IN*/      int    type,
-        /*IN*/    char    *fto, 
-        ... 
-      )
-      {
-        if (DEBUG_MSG_PrintMsg != NULL)
-           {
-             va_list vl ;
-
-             va_start(vl,fto) ;
-             DEBUG_MSG_VPrintF(line,name,pid,type,fto,vl) ;
-       	     va_end(vl) ;
-           }
-      }
-
-   /* ................................................................... */
-
+/* ................................................................... */

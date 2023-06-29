@@ -1,5 +1,6 @@
 /*
- *  Copyright 2020-2023 Felix Garcia Carballeira, Diego Camarmas Alonso, Alejandro Calderon Mateos, Luis Miguel Sanchez Garcia, Borja Bergua Guerra
+ *  Copyright 2020-2023 Felix Garcia Carballeira, Diego Camarmas Alonso, Alejandro Calderon Mateos, Luis Miguel Sanchez
+ * Garcia, Borja Bergua Guerra
  *
  *  This file is part of Expand.
  *
@@ -18,22 +19,41 @@
  *
  */
 
-  /* ... Include / Inclusion ........................................... */
+/**
+ * @file filesystem.c
+ * @brief 'TODO'.
+ *
+ * 'TODO'.
+ *
+ * @authors Felix Garcia Carballeira, Diego Camarmas Alonso, Alejandro Calderon Mateos, Luis Miguel Sanchez Garcia,
+ * Borja Bergua Guerra
+ * @date  Jul 22, 2021
+ * @bug No known bugs.
+ * */
 
-     #include "filesystem.h"
+/************************************************
+ *  ... Includes
+ ***********************************************/
+#include "filesystem.h"
 
-  /* ... Varibles ........................................... */
+/************************************************
+ *  ... Variables
+ ***********************************************/
 
-     //pthread_attr_t filesystem_attr;
+// pthread_attr_t filesystem_attr;
 
-  /* ... Functions / Funciones ......................................... */
-
-     /*
-      * Internal
-      */
-
-int aux_clear_dirs(char * path)
-{
+/************************************************
+ *  ... Internal Functions
+ ***********************************************/
+/**
+ * @brief 'TODO'.
+ *
+ * 'TODO'.
+ *
+ * @param path 'TODO'.
+ * @return 'TODO'.
+ */
+int aux_clear_dirs(char *path) {
     int j;
     char ant = '\0', s[255];
 
@@ -44,15 +64,15 @@ int aux_clear_dirs(char * path)
     j = 0;
     for (unsigned i = 0; i < strlen(path); i++) {
         switch (path[i]) {
-        case '/':
-            if (ant != '/') {
-                ant = s[j] = '/';
+            case '/':
+                if (ant != '/') {
+                    ant = s[j] = '/';
+                    j++;
+                }
+                break;
+            default:
+                ant = s[j] = path[i];
                 j++;
-            }
-            break;
-        default:
-            ant = s[j] = path[i];
-            j++;
         }
 
         s[j] = '\0';
@@ -62,9 +82,17 @@ int aux_clear_dirs(char * path)
     return 0;
 }
 
-
-int aux_get_dirs(char * path, int n, char * s)
-{
+/**
+ * @brief 'TODO'.
+ *
+ * 'TODO'.
+ *
+ * @param path 'TODO'.
+ * @param n 'TODO'.
+ * @param s 'TODO'.
+ * @return 'TODO'.
+ */
+int aux_get_dirs(char *path, int n, char *s) {
     long unsigned i = 0;
     long j = 0, ant = -1, pos = -1;
     int cont = -1;
@@ -103,10 +131,29 @@ int aux_get_dirs(char * path, int n, char * s)
     return strlen(s);
 }
 
-
-/*
- * API
+/**
+ * @brief 'TODO'.
+ *
+ * 'TODO'.
+ *
+ * @param arg 'TODO'.
+ * @par Returns
+ *    Nothing.
  */
+void *filesystem_async_close(void *arg) {
+    // Try to close file
+    int ret = real_posix_close((int)(long)arg);
+    if (ret < 0) {
+        debug_warning("[FILE_POSIX]: async_close(fd:%d) -> %d\n", (int)(long)arg, ret);
+        // perror("async_close: ") ;
+    }
+
+    pthread_exit(NULL);
+}
+
+/************************************************
+ *  ... API Functions
+ ***********************************************/
 
 /*int  filesystem_init ( void )
 {
@@ -120,17 +167,7 @@ int aux_get_dirs(char * path, int n, char * s)
   return 0;
 }*/
 
-void * filesystem_async_close(void * arg)
-{
-    // Try to close file
-    int ret = real_posix_close((int)(long) arg);
-    if (ret < 0) {
-        debug_warning("[FILE_POSIX]: async_close(fd:%d) -> %d\n", (int)(long) arg, ret);
-        //perror("async_close: ") ;
-    }
 
-    pthread_exit(NULL);
-}
 
 /*int  filesystem_destroy ( void )
 {
@@ -143,8 +180,7 @@ void * filesystem_async_close(void * arg)
   return 0;
 }*/
 
-int filesystem_creat(char * pathname, mode_t mode)
-{
+int filesystem_creat(char *pathname, mode_t mode) {
     int ret;
 
     DEBUG_BEGIN();
@@ -161,7 +197,7 @@ int filesystem_creat(char * pathname, mode_t mode)
     ret = real_posix_creat(pathname, mode);
     if (ret < 0) {
         debug_warning("[FILE_POSIX]: open(pathname:%s, flags:%d, mode:%d) -> %d\n", pathname, flags, mode, ret);
-        //perror("open: ") ;
+        // perror("open: ") ;
     }
 
     DEBUG_END();
@@ -170,8 +206,7 @@ int filesystem_creat(char * pathname, mode_t mode)
     return ret;
 }
 
-int filesystem_open(char * pathname, int flags)
-{
+int filesystem_open(char *pathname, int flags) {
     int ret;
 
     DEBUG_BEGIN();
@@ -185,7 +220,7 @@ int filesystem_open(char * pathname, int flags)
     ret = real_posix_open(pathname, flags);
     if (ret < 0) {
         debug_warning("[FILE_POSIX]: open(pathname:%s, flags:%d) -> %d\n", pathname, flags, ret);
-        //perror("open: ") ;
+        // perror("open: ") ;
     }
 
     DEBUG_END();
@@ -194,8 +229,7 @@ int filesystem_open(char * pathname, int flags)
     return ret;
 }
 
-int filesystem_open2(char * pathname, int flags, mode_t mode)
-{
+int filesystem_open2(char *pathname, int flags, mode_t mode) {
     int ret;
 
     DEBUG_BEGIN();
@@ -209,7 +243,7 @@ int filesystem_open2(char * pathname, int flags, mode_t mode)
     ret = real_posix_open2(pathname, flags, mode);
     if (ret < 0) {
         debug_warning("[FILE_POSIX]: open2(pathname:%s, flags:%d, mode:%d) -> %d\n", pathname, flags, mode, ret);
-        //perror("open: ") ;
+        // perror("open: ") ;
     }
 
     DEBUG_END();
@@ -218,8 +252,7 @@ int filesystem_open2(char * pathname, int flags, mode_t mode)
     return ret;
 }
 
-int filesystem_close(int fd)
-{
+int filesystem_close(int fd) {
     int ret;
 
     DEBUG_BEGIN();
@@ -229,28 +262,28 @@ int filesystem_close(int fd)
         debug_warning("[FILE_POSIX]: close file with fd < 0\n");
     }
 
-    // Try to close file
-    #ifdef ASYNC_CLOSE
+// Try to close file
+#ifdef ASYNC_CLOSE
     pthread_t thid;
 
-    ret = pthread_create( & thid, NULL, filesystem_async_close, (void * )(long) fd);
+    ret = pthread_create(&thid, NULL, filesystem_async_close, (void *)(long)fd);
     ret = pthread_detach(thid);
 
     if (ret < 0) {
         ret = real_posix_close(fd);
         if (ret < 0) {
             debug_warning("[FILE_POSIX]: close(fd:%d) -> %d\n", fd, ret);
-            //perror("close: ") ;
+            // perror("close: ") ;
         }
     }
 
-    #else
+#else
     ret = real_posix_close(fd);
     if (ret < 0) {
         debug_warning("[FILE_POSIX]: close(fd:%d) -> %d\n", fd, ret);
-        //perror("close: ") ;
+        // perror("close: ") ;
     }
-    #endif
+#endif
 
     DEBUG_END();
 
@@ -258,11 +291,10 @@ int filesystem_close(int fd)
     return ret;
 }
 
-long filesystem_read(int read_fd2, void * buffer, int buffer_size)
-{
+ssize_t filesystem_read(int read_fd2, void *buffer, size_t buffer_size) {
     ssize_t read_num_bytes = -1;
     ssize_t read_remaining_bytes = buffer_size;
-    void * read_buffer = buffer;
+    void *read_buffer = buffer;
 
     // check arguments...
     if (NULL == buffer) {
@@ -275,7 +307,7 @@ long filesystem_read(int read_fd2, void * buffer, int buffer_size)
 
         /* Check errors */
         if (read_num_bytes < 0) {
-            //perror("read: ") ;
+            // perror("read: ") ;
             debug_error("[FILE_POSIX]: read fails to read data.\n");
             return -1;
         }
@@ -287,17 +319,16 @@ long filesystem_read(int read_fd2, void * buffer, int buffer_size)
         }
 
         read_remaining_bytes = read_remaining_bytes - read_num_bytes;
-        read_buffer = (void * )((char * ) read_buffer + read_num_bytes);
+        read_buffer = (void *)((char *)read_buffer + read_num_bytes);
     }
 
     return buffer_size;
 }
 
-long filesystem_write(int write_fd2, void * buffer, int num_bytes_to_write)
-{
+ssize_t filesystem_write(int write_fd2, void *buffer, size_t num_bytes_to_write) {
     ssize_t write_num_bytes = -1;
     ssize_t write_remaining_bytes = num_bytes_to_write;
-    void * write_buffer = buffer;
+    void *write_buffer = buffer;
 
     // check arguments...
     if (NULL == buffer) {
@@ -310,20 +341,19 @@ long filesystem_write(int write_fd2, void * buffer, int num_bytes_to_write)
 
         /* Check errors */
         if (write_num_bytes < 0) {
-            //perror("write: ") ;
+            // perror("write: ") ;
             debug_error("[FILE_POSIX]: write fails to write data.\n");
             return -1;
         }
 
         write_remaining_bytes = write_remaining_bytes - write_num_bytes;
-        write_buffer = (void * )((char * ) write_buffer + write_num_bytes);
+        write_buffer = (void *)((char *)write_buffer + write_num_bytes);
     }
 
     return num_bytes_to_write;
 }
 
-int filesystem_rename(char * old_pathname, char * new_pathname)
-{
+int filesystem_rename(char *old_pathname, char *new_pathname) {
     int ret;
 
     DEBUG_BEGIN();
@@ -340,7 +370,7 @@ int filesystem_rename(char * old_pathname, char * new_pathname)
     ret = real_posix_rename(old_pathname, new_pathname);
     if (ret < 0) {
         debug_warning("[FILE_POSIX]: rename(old_pathname:%s, new_pathname:%s)\n", old_pathname, new_pathname);
-        //perror("rename: ") ;
+        // perror("rename: ") ;
     }
 
     DEBUG_END();
@@ -349,8 +379,7 @@ int filesystem_rename(char * old_pathname, char * new_pathname)
     return ret;
 }
 
-int filesystem_mkpath(char * pathname)
-{
+int filesystem_mkpath(char *pathname) {
     int ret;
     char dir[PATH_MAX];
 
@@ -360,7 +389,7 @@ int filesystem_mkpath(char * pathname)
         ret = real_posix_mkdir(dir, 0770);
         if (ret < 0) {
             debug_warning("[FILE_POSIX]: cannot mkdir(%s)\n", dir);
-            //perror("mkdir: ") ;
+            // perror("mkdir: ") ;
         }
     }
 
@@ -370,8 +399,7 @@ int filesystem_mkpath(char * pathname)
     return 1;
 }
 
-int filesystem_mkdir(char * pathname, mode_t mode)
-{
+int filesystem_mkdir(char *pathname, mode_t mode) {
     int ret;
 
     DEBUG_BEGIN();
@@ -385,7 +413,7 @@ int filesystem_mkdir(char * pathname, mode_t mode)
     ret = real_posix_mkdir(pathname, mode);
     if (ret < 0) {
         debug_warning("[FILE_POSIX]: mkdir(pathname:%s, mode:%d) -> %d\n", pathname, mode, ret);
-        //perror("mkdir: ") ;
+        // perror("mkdir: ") ;
     }
 
     DEBUG_END();
@@ -394,8 +422,7 @@ int filesystem_mkdir(char * pathname, mode_t mode)
     return ret;
 }
 
-int filesystem_rmdir(char * pathname)
-{
+int filesystem_rmdir(char *pathname) {
     int ret;
 
     DEBUG_BEGIN();
@@ -409,7 +436,7 @@ int filesystem_rmdir(char * pathname)
     ret = real_posix_rmdir(pathname);
     if (ret < 0) {
         debug_warning("[FILE_POSIX]: rmdir(pathname:%s) -> %d\n", pathname, ret);
-        //perror("rmdir: ") ;
+        // perror("rmdir: ") ;
     }
 
     DEBUG_END();
@@ -418,9 +445,8 @@ int filesystem_rmdir(char * pathname)
     return ret;
 }
 
-DIR * filesystem_opendir(char * pathname)
-{
-    DIR * ret;
+DIR *filesystem_opendir(char *pathname) {
+    DIR *ret;
 
     DEBUG_BEGIN();
 
@@ -433,7 +459,7 @@ DIR * filesystem_opendir(char * pathname)
     ret = real_posix_opendir(pathname);
     if (NULL == ret) {
         debug_warning("[FILE_POSIX]: opendir(pathname:%s) -> %p\n", pathname, ret);
-        //perror("opendir: ") ;
+        // perror("opendir: ") ;
     }
 
     DEBUG_END();
@@ -442,9 +468,8 @@ DIR * filesystem_opendir(char * pathname)
     return ret;
 }
 
-struct dirent * filesystem_readdir(DIR * dirp)
-{
-    struct dirent * ret;
+struct dirent *filesystem_readdir(DIR *dirp) {
+    struct dirent *ret;
 
     DEBUG_BEGIN();
 
@@ -457,7 +482,7 @@ struct dirent * filesystem_readdir(DIR * dirp)
     ret = real_posix_readdir(dirp);
     if (NULL == ret) {
         debug_warning("[FILE_POSIX]: readdir(dirp:%p) -> %p\n", dirp, ret);
-        //perror("readdir: ") ;
+        // perror("readdir: ") ;
     }
 
     DEBUG_END();
@@ -466,8 +491,7 @@ struct dirent * filesystem_readdir(DIR * dirp)
     return ret;
 }
 
-int filesystem_closedir(DIR * dirp)
-{
+int filesystem_closedir(DIR *dirp) {
     int ret;
 
     DEBUG_BEGIN();
@@ -481,7 +505,7 @@ int filesystem_closedir(DIR * dirp)
     ret = real_posix_closedir(dirp);
     if (ret < 0) {
         debug_warning("[FILE_POSIX]: closedir(dirp:%p) -> %p\n", dirp, ret);
-        //perror("closedir: ") ;
+        // perror("closedir: ") ;
     }
 
     DEBUG_END();
@@ -490,8 +514,7 @@ int filesystem_closedir(DIR * dirp)
     return ret;
 }
 
-off_t filesystem_lseek(int fd, off_t offset, int whence)
-{
+off_t filesystem_lseek(int fd, off_t offset, int whence) {
     off_t ret;
 
     DEBUG_BEGIN();
@@ -503,9 +526,9 @@ off_t filesystem_lseek(int fd, off_t offset, int whence)
 
     // Try to lseek the file
     ret = real_posix_lseek(fd, offset, whence);
-    if (ret == (off_t) -1) {
+    if (ret == (off_t)-1) {
         debug_warning("[FILE_POSIX]: lseek(fd:%s, offset:%ld, whence:%d) -> %d\n", fd, offset, whence, ret);
-        //perror("lseek: ") ;
+        // perror("lseek: ") ;
     }
 
     DEBUG_END();
@@ -514,8 +537,7 @@ off_t filesystem_lseek(int fd, off_t offset, int whence)
     return ret;
 }
 
-int filesystem_unlink(char * pathname)
-{
+int filesystem_unlink(char *pathname) {
     int ret;
 
     DEBUG_BEGIN();
@@ -529,7 +551,7 @@ int filesystem_unlink(char * pathname)
     ret = real_posix_unlink(pathname);
     if (ret < 0) {
         debug_warning("[FILE_POSIX]: unlink(pathname:%s) -> %d\n", pathname, ret);
-        //perror("unlink: ") ;
+        // perror("unlink: ") ;
     }
 
     DEBUG_END();
@@ -538,8 +560,7 @@ int filesystem_unlink(char * pathname)
     return ret;
 }
 
-int filesystem_stat(char * pathname, struct stat * sinfo)
-{
+int filesystem_stat(char *pathname, struct stat *sinfo) {
     int ret;
 
     DEBUG_BEGIN();
@@ -556,7 +577,7 @@ int filesystem_stat(char * pathname, struct stat * sinfo)
     ret = real_posix_stat(pathname, sinfo);
     if (ret < 0) {
         debug_warning("[FILE_POSIX]: stat(pathname:%s, sinfo:%p) -> %d\n", pathname, sinfo, ret);
-        //perror("stat: ") ;
+        // perror("stat: ") ;
     }
 
     DEBUG_END();
@@ -565,6 +586,4 @@ int filesystem_stat(char * pathname, struct stat * sinfo)
     return ret;
 }
 
-
-  /* ................................................................... */
-
+/* ................................................................... */

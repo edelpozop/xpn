@@ -1,4 +1,3 @@
-
 /*
  *  Copyright 2020-2023 Felix Garcia Carballeira, Diego Camarmas Alonso, Alejandro Calderon Mateos
  *
@@ -19,100 +18,123 @@
  *
  */
 
+/**
+ * @file xpn_ls.c
+ * @brief File to 'TODO'.
+ *
+ * File to 'TODO'.
+ *
+ * @authors Felix Garcia Carballeira, Diego Camarmas Alonso, Alejandro Calderon Mateos
+ * @date  Jul 22, 2021
+ * @bug No known bugs.
+ */
 
-/* ... Include / Inclusion ........................................... */
+/************************************************
+ *  ... Includes
+ ***********************************************/
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <string.h>
+#include <sys/stat.h>
+#include "mpi.h"
 
-  #include <stdio.h>
-  #include <unistd.h>
-  #include <sys/types.h>
-  #include <dirent.h>
-  #include <string.h>
-  #include <sys/stat.h>
-  #include "mpi.h"
+/************************************************
+ *  ... Functions
+ ***********************************************/
 
+/**
+ * @brief 'TODO'.
+ *
+ * 'TODO'.
+ *
+ * @param dir_name 'TODO'.
+ * @param fd 'TODO'.
+ * @return 'TODO'.
+ */
+int list(char *dir_name, FILE *fd)
+{
+  int ret;
+  DIR *dir = NULL;
+  struct stat stat_buf;
+  char path[PATH_MAX];
 
-/* ... Functions / Funciones ......................................... */
-
-  int list (char * dir_name, FILE * fd)
+  dir = opendir(dir_name);
+  if (dir == NULL)
   {
-    int ret;
-    DIR* dir = NULL;
-    struct stat stat_buf;
-    char path [PATH_MAX];
+    perror("opendir:");
+    return -1;
+  }
 
-    dir = opendir(dir_name);
-    if(dir == NULL)
+  struct dirent *entry;
+  entry = readdir(dir);
+
+  while (entry != NULL)
+  {
+    if (!strcmp(entry->d_name, "."))
     {
-      perror("opendir:");
-      return -1;
-    }
-    
-    struct dirent* entry;
-    entry = readdir(dir);
-
-    while(entry != NULL)
-    {
-      if (! strcmp(entry->d_name, ".")){
-        entry = readdir(dir);
-        continue;
-      }
-
-      if (! strcmp(entry->d_name, "..")){
-        entry = readdir(dir);
-        continue;
-      }
-
-      sprintf(path, "%s/%s", dir_name, entry->d_name);
-      fprintf(fd, "%s\n", path);
-
-      ret = stat(path, &stat_buf);
-      if (ret < 0) {
-        perror("stat: ");
-        printf("%s\n", path);
-        entry = readdir(dir);
-        continue;
-      }
-
-      if (S_ISDIR(stat_buf.st_mode))
-      {
-        list(path, fd);
-      }
-
       entry = readdir(dir);
+      continue;
     }
 
-    closedir(dir);
-    
-    return 0;
-  }
-
-  int main(int argc, char *argv[])
-  {
-    FILE * fd;
-
-    if(argc < 3){
-      printf("ERROR: too few arguments.\n");
-      printf("Usage: %s <directory path> <output_file>\n", argv[0]);
-      return -1;
-    }
-
-    MPI_Init(&argc, &argv);
-
-    fd = fopen(argv[2], "w");
-    if ( fd == NULL )
+    if (!strcmp(entry->d_name, ".."))
     {
-      perror("fopen: ");
-      return -1;
+      entry = readdir(dir);
+      continue;
     }
 
-    list(argv[1], fd);
+    sprintf(path, "%s/%s", dir_name, entry->d_name);
+    fprintf(fd, "%s\n", path);
 
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Finalize();
-    
-    return 0;
+    ret = stat(path, &stat_buf);
+    if (ret < 0)
+    {
+      perror("stat: ");
+      printf("%s\n", path);
+      entry = readdir(dir);
+      continue;
+    }
+
+    if (S_ISDIR(stat_buf.st_mode))
+    {
+      list(path, fd);
+    }
+
+    entry = readdir(dir);
   }
 
+  closedir(dir);
+
+  return 0;
+}
+
+int main(int argc, char *argv[])
+{
+  FILE *fd;
+
+  if (argc < 3)
+  {
+    printf("ERROR: too few arguments.\n");
+    printf("Usage: %s <directory path> <output_file>\n", argv[0]);
+    return -1;
+  }
+
+  MPI_Init(&argc, &argv);
+
+  fd = fopen(argv[2], "w");
+  if (fd == NULL)
+  {
+    perror("fopen: ");
+    return -1;
+  }
+
+  list(argv[1], fd);
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Finalize();
+
+  return 0;
+}
 
 /* ................................................................... */
-
