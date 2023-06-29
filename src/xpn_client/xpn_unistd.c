@@ -36,7 +36,9 @@
     {
       int ret = -1 ;
 
+      //printf("before_init_unistd\n");
       ret = xpn_simple_init() ;
+      //printf("after_init_unistd\n");
 
       return ret ;
     }

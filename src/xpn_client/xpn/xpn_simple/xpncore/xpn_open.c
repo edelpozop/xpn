@@ -437,6 +437,8 @@ int xpn_internal_fresize(__attribute__((__unused__)) int fd, __attribute__((__un
 
 int xpn_internal_remove(const char * path) 
 {
+    //printf("inside_simple_remove1\n");
+
     char abs_path[PATH_MAX], url_serv[PATH_MAX];
     int res, err, i, n, pd;
     struct nfi_server ** servers;
@@ -447,16 +449,23 @@ int xpn_internal_remove(const char * path)
         return -1;
     }
 
+    //printf("inside_simple_remove2\n");
+
     res = XpnGetAbsolutePath(path, abs_path); // esta funcion genera el path absoluto
+
+    //printf("inside_simple_remove3\n");
     if (res < 0) 
     {
+        //printf("[%d]xpn_internal_remove error --- %s\n", __LINE__, path);
         xpn_err(XPNERR_PATH_NOEXIST);
         return -1;
     }
 
     pd = XpnGetPartition(abs_path); // return partition's id
+    //printf("inside_simple_remove4\n");
     if (pd < 0) 
     {
+        //printf("[%d]xpn_internal_remove error --- %s\n", __LINE__, path);
         xpn_err(XPNERR_PART_NOEXIST);
         return -1;
     }
@@ -466,8 +475,10 @@ int xpn_internal_remove(const char * path)
      */
     servers = NULL;
     n = XpnGetServers(op_xpn_remove, pd, abs_path, -1, & servers, XPN_DATA_SERVER);
+    //printf("inside_simple_remove5\n");
     if (n <= 0) 
     {
+        //printf("[%d]xpn_internal_remove error --- %s\n", __LINE__, path);
         // free(servers);
         return -1;
     }
@@ -484,6 +495,7 @@ int xpn_internal_remove(const char * path)
     nfi_worker_do_remove(servers[master_node] -> wrk, url_serv);
 
     res = nfiworker_wait(servers[master_node] -> wrk);
+    //printf("inside_simple_remove6\n");
     if (res < 0)
     {
         free(servers);
@@ -507,6 +519,7 @@ int xpn_internal_remove(const char * path)
 
         nfi_worker_do_remove(servers[i] -> wrk, url_serv);
     }
+    //printf("inside_simple_remove7\n");
 
     // Wait
     err = 0;
@@ -524,13 +537,18 @@ int xpn_internal_remove(const char * path)
         }
     }
 
+    //printf("inside_simple_remove8\n");
+
     // error checking
     if (err) 
     {
         xpn_err(XPNERR_REMOVE);
         free(servers);
+        //printf("[%d]xpn_internal_remove error --- %s\n", __LINE__, path);
         return -1;
     }
+
+    //printf("inside_simple_remove9\n");
 
     free(servers);
     xpn_err(XPN_OK);
@@ -730,6 +748,8 @@ int xpn_simple_flush(const char * virtual_path, const char * storage_path)
 
 int xpn_simple_creat(const char * path, mode_t perm) 
 {
+    //printf("xpn_simple_creat_inside_beginning %s\n", path);
+    //printf("inside_simple_creat1\n");
     struct xpn_fh * vfh;
     struct xpn_metadata * mdata;
     int res;
@@ -743,6 +763,8 @@ int xpn_simple_creat(const char * path, mode_t perm)
         return res;
     }
 
+    //printf("inside_simple_creat2\n");
+
     vfh = NULL;
     mdata = NULL;
     /*
@@ -755,7 +777,12 @@ int xpn_simple_creat(const char * path, mode_t perm)
       }
     }
     */
-    xpn_internal_remove(path);
+
+    //printf("inside_simple_creat3\n");
+
+    res = xpn_internal_remove(path);
+
+    //printf("inside_simple_creat4\n");
 
     res = xpn_internal_creat(path, perm, & vfh, & mdata);
     if (res < 0) 
@@ -764,6 +791,8 @@ int xpn_simple_creat(const char * path, mode_t perm)
         return res;
     }
 
+    //printf("inside_simple_creat5\n");
+
     res = xpn_internal_open(path, vfh, mdata, perm);
     if (res < 0) 
     {
@@ -771,8 +800,13 @@ int xpn_simple_creat(const char * path, mode_t perm)
         return res;
     }
 
+    //printf("inside_simple_creat6\n");
+
     xpn_err(XPN_OK);
     XPN_DEBUG_END_ARGS1(path)
+
+   // printf("inside_simple_creat7\n");
+
     return res;
 }
 

@@ -65,6 +65,7 @@ int main ( int argc, char *argv[] )
 	{
 		ret = xpn_write(fd1, buffer, BUFF_SIZE);
 		//printf("%d = xpn_write_%d(%d, %p, %lu)\n", ret, i, fd1, buffer, (unsigned long)BUFF_SIZE);
+		nanosleep((const struct timespec[]){{0, 500000L}}, NULL);
 	}
 	
 	t_aw = get_time() - t_bw;

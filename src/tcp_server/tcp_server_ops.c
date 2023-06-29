@@ -151,11 +151,10 @@ Read the operation to realize
 int tcp_server_do_operation(struct st_th * th, int * the_end)
 {
     DEBUG_BEGIN();
-
     int ret;
     struct st_tcp_server_msg head;
 
-    printf("SERVER DO OPERATION -- %d\n", th -> type_op);
+    printf("SERVER START OPERATION -- %d\n", th -> type_op);
 
     switch (th -> type_op)
     {
@@ -301,11 +300,21 @@ int tcp_server_do_operation(struct st_th * th, int * the_end)
 		tcp_server_op_getnodename(th -> params, (int) th -> sd, & head, 0 /*head.id*/); //NEW
 		break;
 
+        default:
+            ret = -1;
+            printf("Operation not recognized\n\n");
     }
 
-    DEBUG_END();
+    if (ret < 0)
+    {
+        tcp_server_comm_write_data(th -> params, (int) th -> sd, (char * ) & ret, sizeof(int), 0);
+    }
 
-    return 0;
+
+    DEBUG_END();
+    printf("SERVER STOP OPERATION -- %d -- ret - %d\n\n", th -> type_op, ret);
+    /*TO-DO: Habria que tratar arriba el caso de error*/
+    return ret;
 }
 
 //
@@ -332,7 +341,7 @@ void tcp_server_op_open_ws(tcp_server_param_st * params, int sd, struct st_tcp_s
     if ( params -> mosquitto_mode == 1 )
     {
         #ifdef HAVE_MOSQUITTO_H
-        printf("[%d]\tBEGIN OPEN MOSQUITTO TCP_SERVER WS - %s\n", __LINE__, sm);
+        debug_info("[%d]\tBEGIN OPEN MOSQUITTO TCP_SERVER WS - %s\n", __LINE__, sm);
 
         int rc = mosquitto_subscribe(params -> mqtt, NULL, sm, params -> mosquitto_qos);
         if(rc != MOSQ_ERR_SUCCESS)
@@ -376,7 +385,7 @@ void tcp_server_op_open_wos(tcp_server_param_st * params, int sd, struct st_tcp_
     if ( params -> mosquitto_mode == 1 )
     {
         #ifdef HAVE_MOSQUITTO_H
-        printf("[%d]\tBEGIN OPEN MOSQUITTO TCP_SERVER WOS - %s\n", __LINE__, sm);
+        debug_info("[%d]\tBEGIN OPEN MOSQUITTO TCP_SERVER WOS - %s\n", __LINE__, sm);
 
         int rc = mosquitto_subscribe(params -> mqtt, NULL, sm, params -> mosquitto_qos);
         if(rc != MOSQ_ERR_SUCCESS)
@@ -406,7 +415,7 @@ void tcp_server_op_open_wos(tcp_server_param_st * params, int sd, struct st_tcp_
     
 
     // show debug info
-    printf("[%d][TCP-SERVER-OPS] (ID=%s) OPEN(%s)=%d\n", __LINE__, params -> srv_name, s, fd);
+    debug_info("[%d][TCP-SERVER-OPS] (ID=%s) OPEN(%s)=%d\n", __LINE__, params -> srv_name, s, fd);
 
 }
 
@@ -424,7 +433,7 @@ void tcp_server_op_creat_ws(tcp_server_param_st * params, int sd, struct st_tcp_
     if ( params -> mosquitto_mode == 1 )
     {
         #ifdef HAVE_MOSQUITTO_H
-        printf("[%d]\tBEGIN CREAT MOSQUITTO TCP_SERVER WS - %s\n", __LINE__, sm);
+        debug_info("[%d]\tBEGIN CREAT MOSQUITTO TCP_SERVER WS - %s\n", __LINE__, sm);
 
         rc = mosquitto_subscribe(params -> mqtt, NULL, sm, params -> mosquitto_qos);
 
@@ -457,6 +466,7 @@ void tcp_server_op_creat_ws(tcp_server_param_st * params, int sd, struct st_tcp_
 
 void tcp_server_op_creat_wos(tcp_server_param_st * params, int sd, struct st_tcp_server_msg * head, int rank_client_id)
 {
+    printf("Entra CreateWOS\n\n");
     int fd;
     char *extra = "/#";
     char *s;
@@ -465,11 +475,12 @@ void tcp_server_op_creat_wos(tcp_server_param_st * params, int sd, struct st_tcp
     strcat(sm, extra);
 
     s = head -> u_st_tcp_server_msg.op_creat.path;
+    //printf("TCP_SERVER_OPS PREOK - %s\n", s);
 
     if ( params -> mosquitto_mode == 1 )
     {
         #ifdef HAVE_MOSQUITTO_H
-        printf("[%d]\tBEGIN CREATE MOSQUITTO TCP_SERVER WOS - %s\n", __LINE__, sm);
+        debug_info("[%d]\tBEGIN CREATE MOSQUITTO TCP_SERVER WOS - %s\n", __LINE__, sm);
 
         int rc = mosquitto_subscribe(params -> mqtt, NULL, sm, params -> mosquitto_qos);
 
@@ -490,19 +501,38 @@ void tcp_server_op_creat_wos(tcp_server_param_st * params, int sd, struct st_tcp
         **/
         #endif
     }
+    int retries = 0;
 
-    // do creat
-    fd = filesystem_creat(s, 0770); // TODO: tcp_server_op_creat don't use 'mode' from client ?
-    if (fd < 0) {
-        filesystem_mkpath(s);
-        fd = filesystem_creat(s, 0770);
-    }
+    do
+    {
 
+        // do creat
+        fd = filesystem_creat(s, 0770); // TODO: tcp_server_op_creat don't use 'mode' from client ?
+
+        if (fd < 0) 
+        {
+            filesystem_mkpath(s);
+            fd = filesystem_creat(s, 0770);
+            //printf("TCP_SERVER_OPS CREATE NOTOK - %s - %d\n", s, fd);
+            retries++;
+        }
+        else
+        {
+            //printf("TCP_SERVER_OPS CREATEOK - %s - %d\n", s, fd);
+            break;
+        }
+
+    }while((fd < 0) && (retries < 5));
+
+    
+    
+    
+    //printf("[%d][TCP-SERVER-OPS] (ID=%s) CREAT(%s)=%d\n", __LINE__, params -> srv_name, s, fd);
     tcp_server_comm_write_data(params, sd, (char * ) & fd, sizeof(int), rank_client_id);
 
 
     filesystem_close(fd);
-
+    printf("Sale CreateWOS\n\n");
     // show debug info
     debug_info("[%d][TCP-SERVER-OPS] (ID=%s) CREAT(%s)=%d\n", __LINE__, params -> srv_name, s, fd);
 }
@@ -717,6 +747,7 @@ void tcp_server_op_write_ws(tcp_server_param_st * params, int sd, struct st_tcp_
 
 void tcp_server_op_write_wos(tcp_server_param_st * params, int sd, struct st_tcp_server_msg * head, int rank_client_id)
 {
+    printf("Entra WriteWOS\n\n");
     if( params -> mosquitto_mode == 0 )
     {
         struct st_tcp_server_write_req req;
@@ -735,10 +766,12 @@ void tcp_server_op_write_wos(tcp_server_param_st * params, int sd, struct st_tcp
 
         //Open file
         int fd = filesystem_open(head -> u_st_tcp_server_msg.op_write.path, O_WRONLY);
+        //printf("TCP_SERVER_OPS WRITE - %s - %d\n", head -> u_st_tcp_server_msg.op_write.path, fd);
         if (fd < 0)
         {
             req.size = -1; // TODO: check in client that -1 is treated properly... :-)
             tcp_server_comm_write_data(params, sd, (char * ) & req, sizeof(struct st_tcp_server_write_req), rank_client_id);
+            printf("Sale WriteWOS\n\n");
             return;
         }
 
@@ -748,10 +781,11 @@ void tcp_server_op_write_wos(tcp_server_param_st * params, int sd, struct st_tcp
             req.size = -1; // TODO: check in client that -1 is treated properly... :-)
             tcp_server_comm_write_data(params, sd, (char * ) & req, sizeof(struct st_tcp_server_write_req), rank_client_id);
             filesystem_close(fd);
+            printf("Sale WriteWOS\n\n");
             return;
         }
 
-        printf("\npath = %s | to_write = %d | offset = %ld\n", head -> u_st_tcp_server_msg.op_write.path, size, head -> u_st_tcp_server_msg.op_write.offset);
+        //debug_info("\npath = %s | to_write = %d | offset = %ld\n", head -> u_st_tcp_server_msg.op_write.path, size, head -> u_st_tcp_server_msg.op_write.offset);
 
         // loop...
         do {
@@ -781,7 +815,7 @@ void tcp_server_op_write_wos(tcp_server_param_st * params, int sd, struct st_tcp
         filesystem_close(fd);
         FREE_AND_NULL(buffer);
     }
-
+    printf("Sale WriteWOS\n\n");
     // for debugging purpouses
     debug_info("[TCP-SERVER-OPS] (ID=%s) end write: fd %d ID=xn", params -> srv_name, head -> u_st_tcp_server_msg.op_write.fd);
 }
@@ -809,12 +843,12 @@ void tcp_server_op_close_ws(tcp_server_param_st * params, int sd, struct st_tcp_
     if( params -> mosquitto_mode == 1 )
     {
         #ifdef HAVE_MOSQUITTO_H
-        printf("[%d]\tBEGIN CLOSE MOSQUITTO TCP_SERVER - WS \n\n", __LINE__);
+        debug_info("[%d]\tBEGIN CLOSE MOSQUITTO TCP_SERVER - WS \n\n", __LINE__);
 
         mosquitto_unsubscribe(params -> mqtt, NULL, sm);
         mosquitto_unsubscribe(params -> mqtt, NULL, s);
 
-        printf("[%d]\tEND CLOSE MOSQUITTO TCP_SERVER - WS %s\n\n", __LINE__, sm);
+        debug_info("[%d]\tEND CLOSE MOSQUITTO TCP_SERVER - WS %s\n\n", __LINE__, sm);
         #endif
     }
     
@@ -890,7 +924,7 @@ void tcp_server_op_getattr(tcp_server_param_st * params, int sd, struct st_tcp_s
     tcp_server_comm_write_data(params, sd, (char * ) & req, sizeof(struct st_tcp_server_attr_req), rank_client_id);
 
     // show debug info
-    printf("[TCP-SERVER-OPS] (ID=%s) GETATTR(%s)\n", params -> srv_name, head -> u_st_tcp_server_msg.op_getattr.path);
+    debug_info("[TCP-SERVER-OPS] (ID=%s) GETATTR(%s)\n", params -> srv_name, head -> u_st_tcp_server_msg.op_getattr.path);
 }
 
 
@@ -931,7 +965,7 @@ void tcp_server_op_mkdir(tcp_server_param_st * params, int sd, struct st_tcp_ser
     int ret;
     char * s;
 
-    printf("TCP_SERVER_MKDIR -- %s\n", head -> u_st_tcp_server_msg.op_mkdir.path);
+    debug_info("TCP_SERVER_MKDIR -- %s\n", head -> u_st_tcp_server_msg.op_mkdir.path);
 
     // do mkdir
     s = head -> u_st_tcp_server_msg.op_mkdir.path;
@@ -1133,7 +1167,7 @@ void tcp_server_op_flush(tcp_server_param_st * params, int sd, struct st_tcp_ser
     fd_orig = filesystem_open(file, O_RDONLY);
     if (fd_orig < 0)
     {
-        printf("Error on open operation on '%s'\n", file);
+        debug_info("Error on open operation on '%s'\n", file);
         tcp_server_comm_write_data(params, sd, (char * ) & ret, sizeof(int), rank_client_id);
         free(protocol); free(user); free(machine); free(file); free(params1) ;  
         return;
@@ -1143,7 +1177,7 @@ void tcp_server_op_flush(tcp_server_param_st * params, int sd, struct st_tcp_ser
     fd_dest = filesystem_open(head -> u_st_tcp_server_msg.op_flush.storage_path, O_WRONLY | O_CREAT);
     if (fd_dest < 0)
     {
-        printf("Error on open operation on '%s'\n", head -> u_st_tcp_server_msg.op_flush.storage_path);
+        debug_info("Error on open operation on '%s'\n", head -> u_st_tcp_server_msg.op_flush.storage_path);
         filesystem_close(fd_orig);
         tcp_server_comm_write_data(params, sd, (char * ) & fd_dest, sizeof(int), rank_client_id);
         free(protocol); free(user); free(machine); free(file); free(params1) ;  

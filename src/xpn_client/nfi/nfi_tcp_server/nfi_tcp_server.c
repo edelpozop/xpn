@@ -128,14 +128,16 @@ int nfi_tcp_server_doRequest(struct nfi_tcp_server_server * server_aux, struct s
     // send request...
     debug_info("[NFI-TCP] (ID=%s): %s: -> ...\n", server_aux -> id, msg -> id);
     ret = tcp_server_write_operation(server_aux -> params.server, msg);
-    if (ret < 0) {
+    if (ret < 0) 
+    {
         return -1;
     }
 
     // read response...
     debug_info("[NFI-TCP] (ID=%s): %s: <- ...\n", server_aux -> id, msg -> id);
     ret = tcpClient_read_data(server_aux -> params.server, req, req_size, msg -> id);
-    if (ret < 0) {
+    if (ret < 0) 
+    {
         return -1;
     }
 
@@ -143,15 +145,19 @@ int nfi_tcp_server_doRequest(struct nfi_tcp_server_server * server_aux, struct s
     return 0;
 }
 
-int nfi_tcp_server_keepConnected(struct nfi_server * serv) {
-    if (NULL == serv) {
+int nfi_tcp_server_keepConnected(struct nfi_server * serv) 
+{
+    if (NULL == serv) 
+    {
         return -1;
     }
 
     #ifdef NFI_DYNAMIC
-    if (serv -> private_info == NULL) {
+    if (serv -> private_info == NULL) 
+    {
         int ret = nfi_tcp_server_reconnect(serv);
-        if (ret < 0) {
+        if (ret < 0) 
+        {
             serv -> private_info = NULL;
             return -1;
         }
@@ -166,15 +172,18 @@ int nfi_tcp_server_keepConnected(struct nfi_server * serv) {
  *  PRIVATE FUNCTIONS TO USE tcp_server SERVERS
  */
 
-void NFItoTCP_SERVERattr(struct stat * att, struct nfi_attr * nfi_att) {
+void NFItoTCP_SERVERattr(struct stat * att, struct nfi_attr * nfi_att) 
+{
     att -> st_dev = nfi_att -> st_dev;
     att -> st_ino = nfi_att -> st_ino;
 
-    if (nfi_att -> at_type == NFIFILE) {
+    if (nfi_att -> at_type == NFIFILE) 
+    {
         att -> st_mode = nfi_att -> at_mode | S_IFREG; // protection
     }
 
-    if (nfi_att -> at_type == NFIDIR) {
+    if (nfi_att -> at_type == NFIDIR) 
+    {
         att -> st_mode = nfi_att -> at_mode | S_IFDIR; // protection
     }
 
@@ -189,7 +198,9 @@ void NFItoTCP_SERVERattr(struct stat * att, struct nfi_attr * nfi_att) {
     att -> st_ctime = nfi_att -> at_ctime; // time of last change
 }
 
-void TCP_SERVERtoNFIattr(struct nfi_attr * nfi_att, struct stat * att) {
+
+void TCP_SERVERtoNFIattr(struct nfi_attr * nfi_att, struct stat * att) 
+{
     nfi_att -> st_dev = att -> st_dev;
     nfi_att -> st_ino = att -> st_ino;
 
@@ -223,7 +234,10 @@ void TCP_SERVERtoNFIInfo(__attribute__((__unused__)) struct nfi_info * nfi_inf, 
 /************************************************************
  * Init tcp_server                                               *
  ************************************************************/
-int nfi_tcp_server_init(char * url, struct nfi_server * serv, __attribute__((__unused__)) struct nfi_attr_server * attr) {
+int nfi_tcp_server_init(char * url, struct nfi_server * serv, __attribute__((__unused__)) struct nfi_attr_server * attr) 
+{
+    debug_info("Inicio nfi_tcp_server_init\n");
+
     int ret;
     char server[PATH_MAX], dir[PATH_MAX], prt[PATH_MAX];
     struct nfi_tcp_server_server * server_aux;
@@ -231,8 +245,9 @@ int nfi_tcp_server_init(char * url, struct nfi_server * serv, __attribute__((__u
     DEBUG_BEGIN();
 
     // check params...
-    if (serv == NULL) {
-        debug_error("ERROR: serv argument is NULL.\n");
+    if (serv == NULL) 
+    {
+        debug_info("ERROR: serv argument is NULL.\n");
         return -1;
     }
 
@@ -267,17 +282,19 @@ int nfi_tcp_server_init(char * url, struct nfi_server * serv, __attribute__((__u
 
     // parse url...
     ret = ParseURL(url, prt, NULL, NULL, server, NULL, dir);
-    if (ret < 0) {
+    if (ret < 0) 
+    {
         tcp_server_err(TCP_SERVERERR_URL);
-        debug_error("nfi_tcp_server_init: incorrect url '%s'.\n", url);
+        debug_info("nfi_tcp_server_init: incorrect url '%s'.\n", url);
         FREE_AND_NULL(serv -> ops);
         return -1;
     }
 
     // new nfi_mpiserver_server...
     server_aux = (struct nfi_tcp_server_server * ) malloc(sizeof(struct nfi_tcp_server_server));
-    if (server_aux == NULL) {
-        debug_error("ERROR: out of memory\n");
+    if (server_aux == NULL) 
+    {
+        debug_info("ERROR: out of memory\n");
         FREE_AND_NULL(serv -> ops);
         return -1;
     }
@@ -291,7 +308,8 @@ int nfi_tcp_server_init(char * url, struct nfi_server * serv, __attribute__((__u
     server_aux -> params.xpn_thread = TH_NOT;
     serv -> xpn_thread = TH_NOT;
     char * env_thread = getenv("XPN_THREAD");
-    if (env_thread != NULL) {
+    if (env_thread != NULL) 
+    {
         server_aux -> params.xpn_thread = atoi(env_thread);
         serv -> xpn_thread = atoi(env_thread);
     }
@@ -299,20 +317,32 @@ int nfi_tcp_server_init(char * url, struct nfi_server * serv, __attribute__((__u
     // Session mode checking
     server_aux -> params.xpn_session = 0;
     char * env_session = getenv("XPN_SESSION");
-    if (env_session != NULL) {
+    if (env_session != NULL) 
+    {
         server_aux -> params.xpn_session = atoi(env_session);
     }
 
     // Locality mode checking
     server_aux -> params.xpn_locality = 1;
     char * env_locality = getenv("XPN_LOCALITY");
-    if (env_locality != NULL) {
+    if (env_locality != NULL) 
+    {
         server_aux -> params.xpn_locality = atoi(env_locality);
     }
 
+    server_aux -> params.xpn_keep_connection = 1;
+    char * env_connection = getenv("XPN_CONNECTION");
+    if (env_connection != NULL) 
+    {
+        server_aux -> params.xpn_keep_connection = atoi(env_connection);
+    }
+    
+
     // initialize TCP Client communication side...
-    ret = tcpClient_comm_init( & (server_aux -> params));
-    if (ret < 0) {
+    ret = tcpClient_comm_init( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        debug_info("Error nfi_tcp_server_init: tcpClient_comm_init\n");
         FREE_AND_NULL(serv -> ops);
         FREE_AND_NULL(server_aux);
         return -1;
@@ -330,12 +360,48 @@ int nfi_tcp_server_init(char * url, struct nfi_server * serv, __attribute__((__u
     debug_info("[NFI-TCP] nfiworker_init()\n");
     ret = nfiworker_init(serv);
 
+    int n_retries = 0;
+    
+    /*do
+    {
+        
+
+        if (ret < 0)
+        {
+            
+            n_retries++;
+            printf ("\tConnect retry - %d - %s %s\n", n_retries, url, server_aux -> params.server_name);
+            //nanosleep((const struct timespec[]){{0, 500000L}}, NULL);
+        }
+        else
+        {
+            //printf ("\tConnect OK - %d - %s %s\n", n_retries, url, server_aux -> params.server_name);
+            break;
+        //}
+
+    }while((ret < 0) && (n_retries < 5));*/
+
     ret = nfi_tcp_server_connect(serv, url, prt, server, dir);
 
-    debug_info("\n[%d]\t%s %s\n", __LINE__, url, server_aux -> params.server_name);
+    //printf("nfi_tcp_server_connect - %d\n", server_aux -> params.server );
 
     if (ret < 0) 
     {
+        debug_info("Error nfi_tcp_server_connect\n");
+        FREE_AND_NULL(serv -> ops);
+        FREE_AND_NULL(server_aux);
+        return -1;
+    }
+
+    //printf("[%d]\tURL-%s SERVER_NAME-%s SERVER-%d\n", __LINE__, url, server_aux -> params.server_name, server_aux -> params.server);
+
+    int data = 0;
+    
+    ret = tcpClient_read_data( server_aux -> params.server, (char *)&data, 1 * sizeof(int), "<unused msg_id>") ;
+
+    if (ret < 0)
+    {
+        debug_info("Error tcpClient_read_data\n");
         FREE_AND_NULL(serv -> ops);
         FREE_AND_NULL(server_aux);
         return -1;
@@ -343,13 +409,16 @@ int nfi_tcp_server_init(char * url, struct nfi_server * serv, __attribute__((__u
 
     debug_info("[%s][%d]\tnfi_tcp_server_connect - %d\n", __FILE__, __LINE__, ret);
 
-    ret = tcpClient_comm_locality( & (server_aux -> params));
-    if (ret < 0) {
+    ret = tcpClient_comm_locality( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        debug_info("Error tcpClient_comm_locality\n");
         FREE_AND_NULL(serv -> ops);
         FREE_AND_NULL(server_aux);
         return -1;
     }
-    debug_info("[%s][%d]\ttcpClient_comm_locality - %d\n", __FILE__, __LINE__, ret);
+
+    //printf("[%s][%d]\ttcpClient_comm_locality - %d\n", __FILE__, __LINE__, ret);
 
     DEBUG_END();
 
@@ -378,7 +447,7 @@ int nfi_tcp_server_init(char * url, struct nfi_server * serv, __attribute__((__u
                 return -1;
             }
 
-            mosquitto_int_option(server_aux -> mqtt, MOSQ_OPT_TCP_NODELAY, 1);  // TODO: uncomment this line !!
+            mosquitto_int_option(server_aux -> mqtt, MOSQ_OPT_TCP_NODELAY, 1);  
             mosquitto_int_option(server_aux -> mqtt, MOSQ_OPT_SEND_MAXIMUM, 65535);
 
 
@@ -406,6 +475,17 @@ int nfi_tcp_server_init(char * url, struct nfi_server * serv, __attribute__((__u
     #endif
 
 
+
+    ret = doDisconnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_init: DisConnection failed\n");
+        return -1;
+    }
+    
+
+    debug_info("Fin nfi_tcp_server_init\n");
+
     // return OK
     return 0;
 }
@@ -413,18 +493,21 @@ int nfi_tcp_server_init(char * url, struct nfi_server * serv, __attribute__((__u
 /************************************************************
  * Destroy tcp_server                                       *
  * **********************************************************/
-int nfi_tcp_server_destroy(struct nfi_server * serv) {
+int nfi_tcp_server_destroy(struct nfi_server * serv) 
+{
     int ret;
     struct nfi_tcp_server_server * server_aux;
 
     DEBUG_BEGIN();
 
     // check params...
-    if (serv == NULL) {
+    if (serv == NULL) 
+    {
         return 0;
     }
     server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
-    if (server_aux == NULL) {
+    if (server_aux == NULL) 
+    {
         return 0;
     }
 
@@ -432,10 +515,12 @@ int nfi_tcp_server_destroy(struct nfi_server * serv) {
     debug_info("[NFI-TCP] nfiworker_destroy()\n");
     nfiworker_destroy(serv);
 
-    // MPI Finalize...
-    ret = tcpClient_comm_destroy( & (server_aux -> params));
+    nfi_tcp_server_disconnect( serv );
+
+    // TCP Finalize...
+    ret = tcpClient_comm_destroy( & (server_aux -> params) );
     if (ret < 0) {
-        debug_error("[NFI-TCP]: tcpClient_comm_destroy fails :-(");
+        debug_info("[NFI-TCP]: tcpClient_comm_destroy fails :-(");
     }
 
     // free private_info, 'url' string and 'server' string...
@@ -451,7 +536,6 @@ int nfi_tcp_server_destroy(struct nfi_server * serv) {
 
     if (server_aux -> params.xpn_mosquitto_mode == 1)                       //MQTT finalization
     {
-        
         mosquitto_disconnect(server_aux -> mqtt);
         mosquitto_destroy(server_aux -> mqtt);
         mosquitto_lib_cleanup();
@@ -475,20 +559,21 @@ int nfi_tcp_server_connect(struct nfi_server * serv, __attribute__((__unused__))
     DEBUG_BEGIN();
 
     // check params...
-    if (serv == NULL) {
+    if (serv == NULL) 
+    {
         return -1;
     }
-
     server_aux = (struct nfi_tcp_server_server * )(serv -> private_info);
-    if (server_aux == NULL) {
+    if (server_aux == NULL) 
+    {
         return -1;
     }
-
     strcpy(server_aux -> params.srv_name, server);
     debug_info("[%s][%d]\t%s\n", __FILE__, __LINE__, server);
 
     ret = tcpClient_comm_connect( & (server_aux -> params));
-    if (ret < 0) {
+    if (ret < 0) 
+    {
         return -1;
     }
 
@@ -509,18 +594,24 @@ int nfi_tcp_server_disconnect(struct nfi_server * serv) {
     DEBUG_BEGIN();
 
     // check params...
-    if (serv == NULL) {
+    if (serv == NULL) 
+    {
         return 0;
     }
     server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
-    if (server_aux == NULL) {
+    if (server_aux == NULL) 
+    {
         return 0;
     }
 
-    // TCP Disconnect... - ALWAYS RETURNS 0
-    ret = tcpClient_comm_disconnect( & (server_aux -> params));
-    if (ret < 0) {
-        debug_error("[NFI-TCP]: tcpClient_comm_disconnect fails :-(");
+    if ( server_aux -> params.xpn_keep_connection == 1 )
+    {
+        // TCP Disconnect... - ALWAYS RETURNS 0
+        ret = tcpClient_comm_disconnect( & (server_aux -> params));
+        if (ret < 0) 
+        {
+            debug_info("[NFI-TCP]: tcpClient_comm_disconnect fails :-(");
+        }
     }
 
     FREE_AND_NULL(serv -> private_info);
@@ -536,7 +627,8 @@ int nfi_tcp_server_disconnect(struct nfi_server * serv) {
 /************************************************************
  * Reconnect to the MPI server                              *
  ************************************************************/
-int nfi_tcp_server_reconnect(struct nfi_server * serv) {
+int nfi_tcp_server_reconnect(struct nfi_server * serv) 
+{
     // Don't see the serv result
     int ret;
     char server[PATH_MAX], dir[PATH_MAX];
@@ -545,15 +637,17 @@ int nfi_tcp_server_reconnect(struct nfi_server * serv) {
     DEBUG_BEGIN();
 
     // Check arguments
-    if (serv == NULL) {
+    if (serv == NULL) 
+    {
         return -1;
     }
 
     // ParseURL...
     ret = ParseURL(serv -> url, NULL, NULL, NULL, server, NULL, dir);
-    if (ret < 0) {
+    if (ret < 0) 
+    {
         tcp_server_err(TCP_SERVERERR_URL);
-        debug_error("nfi_tcp_server_reconnect: url %s incorrect.\n", serv -> url);
+        debug_info("nfi_tcp_server_reconnect: url %s incorrect.\n", serv -> url);
         return -1;
     }
 
@@ -566,8 +660,9 @@ int nfi_tcp_server_reconnect(struct nfi_server * serv) {
 
     // reconnect...
     ret = tcpClient_comm_connect( & (server_aux -> params));
-    if (ret < 0) {
-        debug_error("nfi_tcp_server_reconnect: tcpClient_comm_connect fails.\n");
+    if (ret < 0) 
+    {
+        debug_info("nfi_tcp_server_reconnect: tcpClient_comm_connect fails.\n");
         return -1;
     }
 
@@ -600,6 +695,13 @@ int nfi_tcp_server_open(struct nfi_server * serv, char * url, struct nfi_fhandle
     server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
     debug_info("[NFI-TCP] nfi_tcp_server_open(ID=%s): begin %s\n", server_aux -> id, url);
 
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_open: Connection failed\n");
+        return -1;
+    }
+
     // from url -> server + dir
     ret = ParseURL(url, NULL, NULL, NULL, server, NULL, dir);
     if (ret < 0) {
@@ -619,24 +721,30 @@ int nfi_tcp_server_open(struct nfi_server * serv, char * url, struct nfi_fhandle
     }
 
     /************** LOCAL *****************/
-    if (server_aux -> params.locality) {
+    if (server_aux -> params.locality) 
+    {
         fh_aux -> fd = real_posix_open2(dir, O_RDWR, S_IRWXU);
-        if (fh_aux -> fd < 0) {
-            debug_error("real_posix_open fails to open '%s' in server %s.\n", dir, serv -> server);
+        if (fh_aux -> fd < 0) 
+        {
+            debug_info("real_posix_open fails to open '%s' in server %s.\n", dir, serv -> server);
             FREE_AND_NULL(fh_aux);
             FREE_AND_NULL(fho -> url);
             return -1;
         }
-        if (server_aux -> params.xpn_session == 0) {
+        if (server_aux -> params.xpn_session == 0) 
+        {
             real_posix_close(fh_aux -> fd);
         }
         strcpy(fh_aux -> path, dir);
     }
     /************** REMOTE ****************/
-    else {
-        if (server_aux -> params.xpn_session) {
+    else 
+    {
+        if (server_aux -> params.xpn_session) 
+        {
             msg.type = TCP_SERVER_OPEN_FILE_WS;
-        } else {
+        } else 
+        {
             msg.type = TCP_SERVER_OPEN_FILE_WOS;
         }
         memccpy(msg.id, server_aux -> id, 0, TCP_SERVER_ID - 1);
@@ -644,8 +752,9 @@ int nfi_tcp_server_open(struct nfi_server * serv, char * url, struct nfi_fhandle
 
         nfi_tcp_server_doRequest(server_aux, & msg, (char * ) & (fh_aux -> fd), sizeof(int));
 
-        if (fh_aux -> fd < 0) {
-            debug_error("real_posix_open fails to open '%s' in server %s.\n", dir, serv -> server);
+        if (fh_aux -> fd < 0) 
+        {
+            debug_info("real_posix_open fails to open '%s' in server %s.\n", dir, serv -> server);
             FREE_AND_NULL(fh_aux);
             FREE_AND_NULL(fho -> url);
             return -1;
@@ -659,6 +768,16 @@ int nfi_tcp_server_open(struct nfi_server * serv, char * url, struct nfi_fhandle
     fho -> type = NFIFILE;
     fho -> server = serv;
     fho -> priv_fh = (void * ) fh_aux;
+
+
+    ret = doDisconnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_open: DisConnection failed\n");
+        return -1;
+    }
+    
+
 
     DEBUG_END();
 
@@ -687,6 +806,15 @@ int nfi_tcp_server_create(struct nfi_server * serv, char * url, struct nfi_attr 
     server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
     debug_info("[NFI-TCP] nfi_tcp_server_create(ID=%s): begin %s\n", server_aux -> id, url);
 
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_create: Connection failed\n");
+        return -1;
+    }
+
+    //printf("[NFI_TCP_SERVER] CREATE WOS - %s\n", url);
+
     // url -> server + dir
     ret = ParseURL(url, NULL, NULL, NULL, server, NULL, dir);
     if (ret < 0) {
@@ -703,10 +831,12 @@ int nfi_tcp_server_create(struct nfi_server * serv, char * url, struct nfi_attr 
     // create the file into the directory
 
     /************** LOCAL *****************/
-    if (server_aux -> params.locality) {
+    if (server_aux -> params.locality) 
+    {
         fh_aux -> fd = real_posix_open2(dir, O_CREAT | O_RDWR | O_TRUNC, attr -> at_mode);
-        if (fh_aux -> fd < 0) {
-            debug_error("files_posix_open fails to creat '%s' in server '%s'.\n", dir, serv -> server);
+        if (fh_aux -> fd < 0) 
+        {
+            debug_info("files_posix_open fails to creat '%s' in server '%s'.\n", dir, serv -> server);
             FREE_AND_NULL(fh_aux);
             DEBUG_END();
             return -1;
@@ -714,32 +844,42 @@ int nfi_tcp_server_create(struct nfi_server * serv, char * url, struct nfi_attr 
 
         //Get stat
         ret = real_posix_stat(dir, & (req.attr));
-        if (ret < 0) {
-            debug_error("nfi_tcp_server_create: Fail stat %s.\n", dir);
+        if (ret < 0) 
+        {
+            debug_info("nfi_tcp_server_create: Fail stat %s.\n", dir);
             FREE_AND_NULL(fh_aux);
             DEBUG_END();
             return ret;
         }
 
-        if (server_aux -> params.xpn_session == 0) {
+        if (server_aux -> params.xpn_session == 0) 
+        {
             real_posix_close(fh_aux -> fd);
         }
         strcpy(fh_aux -> path, dir);
     }
     /************** REMOTE ****************/
-    else {
-        if (server_aux -> params.xpn_session) {
+    else 
+    {        
+        if (server_aux -> params.xpn_session) 
+        {
             msg.type = TCP_SERVER_CREAT_FILE_WS;
-        } else {
+        } else 
+        {
             msg.type = TCP_SERVER_CREAT_FILE_WOS;
         }
         memccpy(msg.id, server_aux -> id, 0, TCP_SERVER_ID - 1);
         memccpy(msg.u_st_tcp_server_msg.op_creat.path, dir, 0, PATH_MAX - 1);
 
+        //printf("CreateClienteWos\n\n");
+        //printf("[NFI_TCP_SERVER] CREATE WOS - %s\n", msg.u_st_tcp_server_msg.op_creat.path);
+
         nfi_tcp_server_doRequest(server_aux, & msg, (char * ) & (fh_aux -> fd), sizeof(int));
 
-        if (fh_aux -> fd < 0) {
-            debug_error("doRequest(creat) fails to open '%s' in server %s.\n", dir, serv -> server);
+
+        if (fh_aux -> fd < 0) 
+        {
+            //printf("doRequest(creat) fails to open '%s' in server %s.\n", dir, serv -> server);
             FREE_AND_NULL(fh_aux);
             DEBUG_END();
             return -1;
@@ -754,17 +894,18 @@ int nfi_tcp_server_create(struct nfi_server * serv, char * url, struct nfi_attr 
         memccpy(msg.u_st_tcp_server_msg.op_getattr.path, dir, 0, PATH_MAX - 1);
 
         nfi_tcp_server_doRequest(server_aux, & msg, (char * ) & req, sizeof(struct st_tcp_server_attr_req));
+
+        //printf("nfi_tcp_server_doRequest after gettattr\n");
     }
     /*****************************************/
-
-    debug_info("CREATE ------------------- %s\n", server_aux -> params.server_name);
 
     fh -> type = NFIFILE;
     fh -> server = serv;
     fh -> priv_fh = (void * ) fh_aux;
 
     fh -> url = strdup(url);
-    if (fh -> url == NULL) {
+    if (fh -> url == NULL) 
+    {
         tcp_server_err(TCP_SERVERERR_MEMORY);
         FREE_AND_NULL(fh_aux);
         DEBUG_END();
@@ -773,6 +914,14 @@ int nfi_tcp_server_create(struct nfi_server * serv, char * url, struct nfi_attr 
 
     TCP_SERVERtoNFIattr(attr, & req.attr);
 
+    ret = doDisconnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_create: DisConnection failed\n");
+        return -1;
+    }
+    
+
     DEBUG_END();
 
     return 0;
@@ -780,7 +929,8 @@ int nfi_tcp_server_create(struct nfi_server * serv, char * url, struct nfi_attr 
 
 
 
-ssize_t nfi_tcp_server_read(struct nfi_server * serv, struct nfi_fhandle * fh, void * buffer, off_t offset, size_t size) {
+ssize_t nfi_tcp_server_read(struct nfi_server * serv, struct nfi_fhandle * fh, void * buffer, off_t offset, size_t size) 
+{
     int ret, cont, diff;
     struct nfi_tcp_server_server * server_aux;
     struct nfi_tcp_server_fhandle * fh_aux;
@@ -800,21 +950,32 @@ ssize_t nfi_tcp_server_read(struct nfi_server * serv, struct nfi_fhandle * fh, v
     debug_info("[NFI-TCP] nfi_tcp_server_read(%s): begin off %d size %d\n", server_aux -> id, (int) offset, (int) size);
     fh_aux = (struct nfi_tcp_server_fhandle * ) fh -> priv_fh;
 
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_read: Connection failed\n");
+        return -1;
+    }
+
     /************** LOCAL *****************/
-    if (server_aux -> params.locality) {
-        if (server_aux -> params.xpn_session) {
+    if (server_aux -> params.locality) 
+    {
+        if (server_aux -> params.xpn_session) 
+        {
             real_posix_lseek(fh_aux -> fd, offset, SEEK_SET);
             //if(server_aux->params.sem_server != 0) sem_wait(server_aux->params.sem_server);
             ret = real_posix_read(fh_aux -> fd, buffer, size);
             //if(server_aux->params.sem_server != 0) sem_post(server_aux->params.sem_server);
 
             debug_info("[NFI-TCP] read %s(%d) off %ld size %zu (ret:%zd)", fh -> url, fh_aux -> fd, (long int) offset, size, ret);
-        } else {
+        } else 
+        {
             int fd;
 
             fd = real_posix_open(fh_aux -> path, O_RDONLY);
-            if (fd < 0) {
-                debug_error("real_posix_read reads zero bytes from url:%s offset:%ld size:%zu (ret:%zd) errno=%d\n", fh -> url, (long int) offset, size, ret, errno);
+            if (fd < 0) 
+            {
+                debug_info("real_posix_read reads zero bytes from url:%s offset:%ld size:%zu (ret:%zd) errno=%d\n", fh -> url, (long int) offset, size, ret, errno);
                 return -1;
             }
 
@@ -829,7 +990,7 @@ ssize_t nfi_tcp_server_read(struct nfi_server * serv, struct nfi_fhandle * fh, v
         }
 
         if (ret < 0) {
-            debug_error("real_posix_read reads zero bytes from url:%s offset:%ld size:%zu (ret:%zd) errno=%d\n", fh -> url, (long int) offset, size, ret, errno);
+            debug_info("real_posix_read reads zero bytes from url:%s offset:%ld size:%zu (ret:%zd) errno=%d\n", fh -> url, (long int) offset, size, ret, errno);
             return -1;
         }
     }
@@ -895,6 +1056,14 @@ ssize_t nfi_tcp_server_read(struct nfi_server * serv, struct nfi_fhandle * fh, v
         ret = cont;
     }
 
+    int ret2 = doDisconnection( & (server_aux -> params) );
+    if (ret2 < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_read: DisConnection failed\n");
+        return -1;
+    }
+    
+
     DEBUG_END();
 
     return ret;
@@ -902,7 +1071,8 @@ ssize_t nfi_tcp_server_read(struct nfi_server * serv, struct nfi_fhandle * fh, v
 
 
 
-ssize_t nfi_tcp_server_write(struct nfi_server * serv, struct nfi_fhandle * fh, void * buffer, off_t offset, size_t size) {
+ssize_t nfi_tcp_server_write(struct nfi_server * serv, struct nfi_fhandle * fh, void * buffer, off_t offset, size_t size) 
+{
     int ret, diff, cont;
 
     struct nfi_tcp_server_server * server_aux;
@@ -929,6 +1099,14 @@ ssize_t nfi_tcp_server_write(struct nfi_server * serv, struct nfi_fhandle * fh, 
 
     debug_info("ANTES ------------------- %s\n", server_aux -> params.server_name);
 
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_write: Connection failed\n");
+        return -1;
+    }
+
+
     if (server_aux -> params.xpn_mosquitto_mode == 0)
     {
         /************** LOCAL *****************/
@@ -948,7 +1126,7 @@ ssize_t nfi_tcp_server_write(struct nfi_server * serv, struct nfi_fhandle * fh, 
 
                 fd = real_posix_open(fh_aux -> path, O_WRONLY); // WOS
                 if (fd < 0) {
-                    debug_error("real_posix_write writes zero bytes from url:%s offset:%ld size:%zu (ret:%zd) errno=%d\n", fh -> url, (long int) offset, size, ret, errno);
+                    debug_info("real_posix_write writes zero bytes from url:%s offset:%ld size:%zu (ret:%zd) errno=%d\n", fh -> url, (long int) offset, size, ret, errno);
                     return -1;
                 }
 
@@ -963,7 +1141,7 @@ ssize_t nfi_tcp_server_write(struct nfi_server * serv, struct nfi_fhandle * fh, 
             }
 
             if (ret < 0) {
-                debug_error("real_posix_write writes zero bytes from url:%s offset:%ld size:%zu (ret:%zd) errno=%d\n", fh -> url, (long int) offset, size, ret, errno);
+                debug_info("real_posix_write writes zero bytes from url:%s offset:%ld size:%zu (ret:%zd) errno=%d\n", fh -> url, (long int) offset, size, ret, errno);
                 return -1;
             }
         }
@@ -990,6 +1168,8 @@ ssize_t nfi_tcp_server_write(struct nfi_server * serv, struct nfi_fhandle * fh, 
             debug_info("[NFI-TCP] write: -> offset %d \n", (int) msg.u_st_tcp_server_msg.op_write.offset);
             debug_info("[NFI-TCP] write: -> size   %d \n", msg.u_st_tcp_server_msg.op_write.size);
 
+            //printf("EscrituraClienteWos\n\n");
+
             ret = tcp_server_write_operation(server_aux -> params.server, & msg);
             if (ret < 0) 
             {
@@ -1015,12 +1195,13 @@ ssize_t nfi_tcp_server_write(struct nfi_server * serv, struct nfi_fhandle * fh, 
                 if( diff > buffer_size )        bytes_to_write = buffer_size;
                 else                            bytes_to_write = diff;
 
-                printf("\nREMOTE - %s - %d - %d\n\n", server_aux -> params.server_name, bytes_to_write, offset);
-                ret = tcpClient_write_data(server_aux -> params.server, (char * ) buffer + cont, bytes_to_write, msg.id); 
                 
+                ret = tcpClient_write_data(server_aux -> params.server, (char * ) buffer + cont, bytes_to_write, msg.id); 
+                //printf("REMOTE - %s - %d - %d - %d\n\n", server_aux -> params.server_name, bytes_to_write, offset, ret);
                 if (ret < 0) 
                 {
                     fprintf(stderr, "(2)ERROR: nfi_tcp_server_write(ID=%s): Error on write operation\n", server_aux -> id);
+                    return ret;
                 }
 
                 cont = cont + bytes_to_write; //Send bytes
@@ -1028,13 +1209,14 @@ ssize_t nfi_tcp_server_write(struct nfi_server * serv, struct nfi_fhandle * fh, 
 
             } while ((diff > 0) && (ret != 0));
 
+
             ret = tcpClient_read_data(server_aux -> params.server, (char * ) & req, sizeof(struct st_tcp_server_write_req), msg.id);
+
             if (ret < 0) 
             {
                 fprintf(stderr, "(3)ERROR: nfi_tcp_server_write(ID=%s): Error on write operation\n", server_aux -> id);
                 return -1;
             }
-
             debug_info("[NFI-TCP] nfi_tcp_server_write(ID=%s): write %s off %d size %d (err:%d).\n", server_aux -> id, fh -> url, (int) offset, (int) size, (int) req.size);
             if (req.size < 0) 
             {
@@ -1098,6 +1280,12 @@ ssize_t nfi_tcp_server_write(struct nfi_server * serv, struct nfi_fhandle * fh, 
         ret = cont;
     }
 
+    int ret2 = doDisconnection( & (server_aux -> params) );
+    if (ret2 < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_write: DisConnection failed\n");
+        return -1;
+    }
 
     DEBUG_END();
 
@@ -1124,8 +1312,16 @@ int nfi_tcp_server_close(struct nfi_server * serv, struct nfi_fhandle * fh) {
     server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
     debug_info("[NFI-TCP] nfi_tcp_server_close(ID=%s): begin\n", server_aux -> id);
 
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_close: Connection failed\n");
+        return -1;
+    }
+
     // without session -> just return ok
-    if (server_aux -> params.xpn_session == 0) {
+    if (server_aux -> params.xpn_session == 0) 
+    {
         debug_info("[NFI-TCP] nfi_tcp_server_close(ID=%s): end\n", server_aux -> id);
         return 1;
     }
@@ -1164,6 +1360,14 @@ int nfi_tcp_server_close(struct nfi_server * serv, struct nfi_fhandle * fh) {
     fh -> type = NFINULL;
     fh -> server = NULL;
 
+    int ret2 = doDisconnection( & (server_aux -> params) );
+    if (ret2 < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_close: DisConnection failed\n");
+        return -1;
+    }
+    
+
     DEBUG_END();
 
     // Return OK
@@ -1172,11 +1376,12 @@ int nfi_tcp_server_close(struct nfi_server * serv, struct nfi_fhandle * fh) {
 
 
 
-int nfi_tcp_server_remove(struct nfi_server * serv, char * url) {
+int nfi_tcp_server_remove(struct nfi_server * serv, char * url) 
+{
     int ret;
     char server[PATH_MAX], dir[PATH_MAX];
     struct nfi_tcp_server_server * server_aux;
-    struct st_tcp_server_msg msg;
+    struct st_tcp_server_msg msg;    
 
     // Check arguments...
     NULL_RET_ERR(serv, TCP_SERVERERR_PARAM);
@@ -1187,35 +1392,54 @@ int nfi_tcp_server_remove(struct nfi_server * serv, char * url) {
     // private_info...
     server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
     debug_info("[NFI-TCP] nfi_tcp_server_remove(%s): begin %s\n", server_aux -> id, url);
-    if (server_aux == NULL) {
+    if (server_aux == NULL) 
+    {
         tcp_server_err(TCP_SERVERERR_PARAM);
+        return -1;
+    }
+
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_remove: Connection failed\n");
         return -1;
     }
 
     // from url -> server + dir
     ret = ParseURL(url, NULL, NULL, NULL, server, NULL, dir);
-    if (ret < 0) {
+    if (ret < 0) 
+    {
         fprintf(stderr, "nfi_tcp_server_remove: url %s incorrect.\n", url);
         tcp_server_err(TCP_SERVERERR_URL);
         return -1;
     }
 
     /************** LOCAL *****************/
-    if (server_aux -> params.locality) {
+    if (server_aux -> params.locality) 
+    {
         ret = real_posix_unlink(dir);
         if (ret < 0) {
-            debug_error("real_posix_open fails to open '%s' in server %s.\n", dir, serv -> server);
+            debug_info("real_posix_open fails to open '%s' in server %s.\n", dir, serv -> server);
             return -1;
         }
     }
     /************** REMOTE ****************/
-    else {
+    else 
+    {
         msg.type = TCP_SERVER_RM_FILE;
         memccpy(msg.id, server_aux -> id, 0, TCP_SERVER_ID - 1);
         memccpy(msg.u_st_tcp_server_msg.op_rm.path, dir, 0, PATH_MAX - 1);
 
         nfi_tcp_server_doRequest(server_aux, & msg, (char * ) & (ret), sizeof(int));
     }
+
+    int ret2 = doDisconnection( & (server_aux -> params) );
+    if (ret2 < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_remove: DisConnection failed\n");
+        return -1;
+    }
+    
 
     DEBUG_END();
 
@@ -1224,13 +1448,22 @@ int nfi_tcp_server_remove(struct nfi_server * serv, char * url) {
 
 
 
-int nfi_tcp_server_rename(struct nfi_server * serv, char * old_url, char * new_url) {
+int nfi_tcp_server_rename(struct nfi_server * serv, char * old_url, char * new_url) 
+{
     int ret;
     char server[PATH_MAX], old_path[PATH_MAX], new_path[PATH_MAX];
     struct nfi_tcp_server_server * server_aux;
     struct st_tcp_server_msg msg;
 
     DEBUG_BEGIN();
+
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_rename: Connection failed\n");
+        return -1;
+    }
+    
 
     // Check arguments...
     NULL_RET_ERR(serv, TCP_SERVERERR_PARAM);
@@ -1242,35 +1475,41 @@ int nfi_tcp_server_rename(struct nfi_server * serv, char * old_url, char * new_u
     // private_info...
     server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
     debug_info("[NFI-TCP] nfi_tcp_server_remove(%s): begin %s\n", server_aux -> id, new_url);
-    if (server_aux == NULL) {
+    if (server_aux == NULL) 
+    {
         tcp_server_err(TCP_SERVERERR_PARAM);
         return -1;
     }
 
     ret = ParseURL(old_url, NULL, NULL, NULL, server, NULL, old_path);
-    if (ret < 0) {
+    if (ret < 0) 
+    {
         fprintf(stderr, "nfi_tcp_server_open: url %s incorrect.\n", old_url);
         tcp_server_err(TCP_SERVERERR_URL);
         return -1;
     }
 
     ret = ParseURL(new_url, NULL, NULL, NULL, server, NULL, new_path);
-    if (ret < 0) {
+    if (ret < 0) 
+    {
         fprintf(stderr, "nfi_tcp_server_open: url %s incorrect.\n", new_url);
         tcp_server_err(TCP_SERVERERR_URL);
         return -1;
     }
 
     /************** LOCAL *****************/
-    if (server_aux -> params.locality) {
+    if (server_aux -> params.locality) 
+    {
         ret = real_posix_rename(old_path, new_path);
-        if (ret < 0) {
-            debug_error("real_posix_rename fails to rename '%s' in server %s.\n", old_path, serv -> server);
+        if (ret < 0) 
+        {
+            debug_info("real_posix_rename fails to rename '%s' in server %s.\n", old_path, serv -> server);
             return -1;
         }
     }
     /************** REMOTE ****************/
-    else {
+    else 
+    {
         msg.type = TCP_SERVER_RENAME_FILE;
 
         memccpy(msg.id, server_aux -> id, 0, TCP_SERVER_ID - 1);
@@ -1280,6 +1519,14 @@ int nfi_tcp_server_rename(struct nfi_server * serv, char * old_url, char * new_u
         nfi_tcp_server_doRequest(server_aux, & msg, (char * ) & (ret), sizeof(int));
     }
 
+    int ret2 = doDisconnection( & (server_aux -> params) );
+    if (ret2 < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_rename: DisConnection failed\n");
+        return -1;
+    }
+    
+
     DEBUG_END();
 
     return ret;
@@ -1287,7 +1534,8 @@ int nfi_tcp_server_rename(struct nfi_server * serv, char * old_url, char * new_u
 
 
 
-int nfi_tcp_server_getattr(struct nfi_server * serv, struct nfi_fhandle * fh, struct nfi_attr * attr) {
+int nfi_tcp_server_getattr(struct nfi_server * serv, struct nfi_fhandle * fh, struct nfi_attr * attr) 
+{
     int ret;
     char server[PATH_MAX], dir[PATH_MAX];
     struct nfi_tcp_server_server * server_aux;
@@ -1296,6 +1544,14 @@ int nfi_tcp_server_getattr(struct nfi_server * serv, struct nfi_fhandle * fh, st
     struct st_tcp_server_attr_req req;
 
     DEBUG_BEGIN();
+
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_getattr: Connection failed\n");
+        return -1;
+    }
+    
 
     // check arguments...
     NULL_RET_ERR(serv, TCP_SERVERERR_PARAM);
@@ -1316,15 +1572,17 @@ int nfi_tcp_server_getattr(struct nfi_server * serv, struct nfi_fhandle * fh, st
     }
 
     /************** LOCAL *****************/
-    if (server_aux -> params.locality) {
+    if (server_aux -> params.locality) 
+    {
         req.status = real_posix_stat(dir, & (req.attr));
         if (((int) req.status) < 0) {
-            debug_error("nfi_tcp_server_getattr: Fail stat %s.\n", dir);
+            debug_info("nfi_tcp_server_getattr: Fail stat %s.\n", dir);
             return req.status;
         }
     }
     /************** REMOTE ****************/
-    else {
+    else 
+    {
         msg.type = TCP_SERVER_GETATTR_FILE;
         memccpy(msg.id, server_aux -> id, 0, TCP_SERVER_ID - 1);
         memccpy(msg.u_st_tcp_server_msg.op_getattr.path, dir, 0, PATH_MAX - 1);
@@ -1334,6 +1592,14 @@ int nfi_tcp_server_getattr(struct nfi_server * serv, struct nfi_fhandle * fh, st
 
     TCP_SERVERtoNFIattr(attr, & req.attr);
 
+    int ret2 = doDisconnection( & (server_aux -> params) );
+    if (ret2 < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_getattr: DisConnection failed\n");
+        return -1;
+    }
+    
+
     DEBUG_END();
 
     // return status
@@ -1342,7 +1608,8 @@ int nfi_tcp_server_getattr(struct nfi_server * serv, struct nfi_fhandle * fh, st
 
 
 
-int nfi_tcp_server_setattr(struct nfi_server * serv, struct nfi_fhandle * fh, struct nfi_attr * attr) {
+int nfi_tcp_server_setattr(struct nfi_server * serv, struct nfi_fhandle * fh, struct nfi_attr * attr) 
+{
     struct nfi_tcp_server_server * server_aux;
     struct nfi_tcp_server_fhandle * fh_aux;
 
@@ -1370,7 +1637,8 @@ int nfi_tcp_server_setattr(struct nfi_server * serv, struct nfi_fhandle * fh, st
 
 
 
-int nfi_tcp_server_mkdir(struct nfi_server * serv, char * url, struct nfi_attr * attr, struct nfi_fhandle * fh) {
+int nfi_tcp_server_mkdir(struct nfi_server * serv, char * url, struct nfi_attr * attr, struct nfi_fhandle * fh) 
+{
     int ret;
     char server[PATH_MAX], dir[PATH_MAX];
     struct nfi_tcp_server_server * server_aux;
@@ -1379,6 +1647,14 @@ int nfi_tcp_server_mkdir(struct nfi_server * serv, char * url, struct nfi_attr *
     struct st_tcp_server_attr_req req;
 
     DEBUG_BEGIN();
+
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_mkdir: Connection failed\n");
+        return -1;
+    }
+    
 
     // Check arguments...
     NULL_RET_ERR(serv, TCP_SERVERERR_PARAM);
@@ -1390,7 +1666,8 @@ int nfi_tcp_server_mkdir(struct nfi_server * serv, char * url, struct nfi_attr *
     server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
 
     ret = ParseURL(url, NULL, NULL, NULL, server, NULL, dir);
-    if (ret < 0) {
+    if (ret < 0) 
+    {
         fprintf(stderr, "nfi_tcp_server_mkdir: url %s incorrect.\n", url);
         tcp_server_err(TCP_SERVERERR_URL);
         return -1;
@@ -1402,10 +1679,12 @@ int nfi_tcp_server_mkdir(struct nfi_server * serv, char * url, struct nfi_attr *
     bzero(fh_aux, sizeof(struct nfi_tcp_server_fhandle));
 
     /************** LOCAL *****************/
-    if (server_aux -> params.locality) {
+    if (server_aux -> params.locality) 
+    {
         ret = real_posix_mkdir(dir, /*attr->at_mode*/ 0777);
-        if ((ret < 0) && (errno != EEXIST)) {
-            debug_error("nfi_tcp_server_mkdir: Fail mkdir %s.\n", dir);
+        if ((ret < 0) && (errno != EEXIST)) 
+        {
+            debug_info("nfi_tcp_server_mkdir: Fail mkdir %s.\n", dir);
             FREE_AND_NULL(fh_aux);
             return -1;
         }
@@ -1414,19 +1693,21 @@ int nfi_tcp_server_mkdir(struct nfi_server * serv, char * url, struct nfi_attr *
         //Get stat
         ret = real_posix_stat(dir, & (req.attr));
         if (ret < 0) {
-            debug_error("nfi_tcp_server_create: Fail stat %s.\n", dir);
+            debug_info("nfi_tcp_server_create: Fail stat %s.\n", dir);
             return ret;
         }
     }
     /************** SERVER ****************/
-    else {
+    else 
+    {
         msg.type = TCP_SERVER_MKDIR_DIR;
         memccpy(msg.u_st_tcp_server_msg.op_mkdir.path, dir, 0, PATH_MAX - 1);
 
         nfi_tcp_server_doRequest(server_aux, & msg, (char * ) & (fh_aux -> fd), sizeof(int));
         memccpy(fh_aux -> path, dir, 0, PATH_MAX - 1);
 
-        if ((fh_aux -> fd < 0) && (errno != EEXIST)) {
+        if ((fh_aux -> fd < 0) && (errno != EEXIST)) 
+        {
             tcp_server_err(TCP_SERVERERR_MKDIR);
             fprintf(stderr, "nfi_tcp_server_mkdir: Fail mkdir %s in server %s.\n", dir, serv -> server);
             FREE_AND_NULL(fh_aux);
@@ -1453,6 +1734,14 @@ int nfi_tcp_server_mkdir(struct nfi_server * serv, char * url, struct nfi_attr *
 
     TCP_SERVERtoNFIattr(attr, & req.attr);
 
+    int ret2 = doDisconnection( & (server_aux -> params) );
+    if (ret2 < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_mkdir: DisConnection failed\n");
+        return -1;
+    }
+
+
     DEBUG_END();
 
     return ret;
@@ -1460,7 +1749,8 @@ int nfi_tcp_server_mkdir(struct nfi_server * serv, char * url, struct nfi_attr *
 
 
 
-int nfi_tcp_server_opendir(struct nfi_server * serv, char * url, struct nfi_fhandle * fho) {
+int nfi_tcp_server_opendir(struct nfi_server * serv, char * url, struct nfi_fhandle * fho) 
+{
     int ret;
     char dir[PATH_MAX], server[PATH_MAX];
     struct nfi_tcp_server_server * server_aux;
@@ -1468,6 +1758,14 @@ int nfi_tcp_server_opendir(struct nfi_server * serv, char * url, struct nfi_fhan
     struct st_tcp_server_msg msg;
 
     DEBUG_BEGIN();
+
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_opendir: Connection failed\n");
+        return -1;
+    }
+    
 
     // Check arguments...
     NULL_RET_ERR(serv, TCP_SERVERERR_PARAM);
@@ -1497,17 +1795,20 @@ int nfi_tcp_server_opendir(struct nfi_server * serv, char * url, struct nfi_fhan
     server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
 
     /************** LOCAL *****************/
-    if (server_aux -> params.locality) {
+    if (server_aux -> params.locality) 
+    {
         fh_aux -> dir = real_posix_opendir(dir);
-        if (fh_aux -> dir == NULL) {
+        if (fh_aux -> dir == NULL) 
+        {
             FREE_AND_NULL(fh_aux);
             FREE_AND_NULL(fho -> url);
-            debug_error("real_posix_opendir fails to open directory '%s' in server '%s'.\n", dir, serv -> server);
+            debug_info("real_posix_opendir fails to open directory '%s' in server '%s'.\n", dir, serv -> server);
             return -1;
         }
     }
     /************** SERVER ****************/
-    else {
+    else 
+    {
         msg.type = TCP_SERVER_OPENDIR_DIR;
         memccpy(msg.id, server_aux -> id, 0, TCP_SERVER_ID - 1);
         memccpy(msg.u_st_tcp_server_msg.op_opendir.path, dir, 0, PATH_MAX - 1);
@@ -1523,6 +1824,14 @@ int nfi_tcp_server_opendir(struct nfi_server * serv, char * url, struct nfi_fhan
     fho -> server = serv;
     fho -> priv_fh = (void * ) fh_aux;
 
+    int ret2 = doDisconnection( & (server_aux -> params) );
+    if (ret2 < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_opendir: DisConnection failed\n");
+        return -1;
+    }
+    
+
     DEBUG_END();
 
     return 0;
@@ -1530,7 +1839,9 @@ int nfi_tcp_server_opendir(struct nfi_server * serv, char * url, struct nfi_fhan
 
 
 
-int nfi_tcp_server_readdir(struct nfi_server * serv, struct nfi_fhandle * fh, struct dirent * entry) {
+int nfi_tcp_server_readdir(struct nfi_server * serv, struct nfi_fhandle * fh, struct dirent * entry) 
+{
+    int ret = 0;
     struct nfi_tcp_server_server * server_aux;
     struct nfi_tcp_server_fhandle * fh_aux;
     struct st_tcp_server_msg msg;
@@ -1539,12 +1850,21 @@ int nfi_tcp_server_readdir(struct nfi_server * serv, struct nfi_fhandle * fh, st
 
     DEBUG_BEGIN();
 
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_readdir: Connection failed\n");
+        return -1;
+    }
+    
+
     // Check arguments...
     NULL_RET_ERR(serv, TCP_SERVERERR_PARAM);
     NULL_RET_ERR(fh, TCP_SERVERERR_PARAM);
     NULL_RET_ERR(fh -> priv_fh, TCP_SERVERERR_PARAM);
 
-    if (fh -> type != NFIDIR) {
+    if (fh -> type != NFIDIR) 
+    {
         tcp_server_err(TCP_SERVERERR_NOTDIR);
         return -1;
     }
@@ -1560,29 +1880,40 @@ int nfi_tcp_server_readdir(struct nfi_server * serv, struct nfi_fhandle * fh, st
     memset(entry, 0, sizeof(struct dirent));
 
     /************** LOCAL *****************/
-    if (server_aux -> params.locality) {
+    if (server_aux -> params.locality) 
+    {
         ent = real_posix_readdir(fh_aux -> dir);
         if (ent == NULL) {
-            debug_error("nfi_tcp_server_readdir: readdir");
+            debug_info("nfi_tcp_server_readdir: readdir");
             return -1;
         }
 
         memcpy(entry, ent, sizeof(struct dirent));
     }
     /************** SERVER ****************/
-    else {
+    else 
+    {
         msg.type = TCP_SERVER_READDIR_DIR;
         memccpy(msg.id, server_aux -> id, 0, TCP_SERVER_ID - 1);
         msg.u_st_tcp_server_msg.op_readdir.dir = fh_aux -> dir;
 
         nfi_tcp_server_doRequest(server_aux, & msg, (char * ) & (ret_entry), sizeof(struct st_tcp_server_direntry)); //NEW
 
-        if (ret_entry.end == 0) {
+        if (ret_entry.end == 0) 
+        {
             return -1;
         }
 
         memcpy(entry, & (ret_entry.ret), sizeof(struct dirent));
     }
+
+    int ret2 = doDisconnection( & (server_aux -> params) );
+    if (ret2 < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_readdir: DisConnection failed\n");
+        return -1;
+    }
+    
 
     DEBUG_END();
 
@@ -1591,13 +1922,22 @@ int nfi_tcp_server_readdir(struct nfi_server * serv, struct nfi_fhandle * fh, st
 
 
 
-int nfi_tcp_server_closedir(struct nfi_server * serv, struct nfi_fhandle * fh) {
+int nfi_tcp_server_closedir(struct nfi_server * serv, struct nfi_fhandle * fh) 
+{
     int ret;
     struct st_tcp_server_msg msg;
     struct nfi_tcp_server_server * server_aux;
     struct nfi_tcp_server_fhandle * fh_aux;
 
     DEBUG_BEGIN();
+
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_closedir: Connection failed\n");
+        return -1;
+    }
+    
 
     // Check arguments...
     NULL_RET_ERR(serv, TCP_SERVERERR_PARAM);
@@ -1606,17 +1946,20 @@ int nfi_tcp_server_closedir(struct nfi_server * serv, struct nfi_fhandle * fh) {
     NULL_RET_ERR(serv -> private_info, TCP_SERVERERR_PARAM);
 
     // do closedir...
-    if (fh -> priv_fh != NULL) {
+    if (fh -> priv_fh != NULL) 
+    {
         // private_info...
         server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
         fh_aux = (struct nfi_tcp_server_fhandle * ) fh -> priv_fh;
 
         /************** LOCAL *****************/
-        if (server_aux -> params.locality) {
+        if (server_aux -> params.locality) 
+        {
             real_posix_closedir(fh_aux -> dir);
         }
         /************** SERVER ****************/
-        else {
+        else 
+        {
             msg.type = TCP_SERVER_CLOSEDIR_DIR;
 
             memccpy(msg.id, server_aux -> id, 0, TCP_SERVER_ID - 1);
@@ -1630,6 +1973,14 @@ int nfi_tcp_server_closedir(struct nfi_server * serv, struct nfi_fhandle * fh) {
         FREE_AND_NULL(fh -> priv_fh);
     }
 
+    int ret2 = doDisconnection( & (server_aux -> params) );
+    if (ret2 < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_closedir: DisConnection failed\n");
+        return -1;
+    }
+    
+
     DEBUG_END();
 
     return 0;
@@ -1637,13 +1988,22 @@ int nfi_tcp_server_closedir(struct nfi_server * serv, struct nfi_fhandle * fh) {
 
 
 
-int nfi_tcp_server_rmdir(struct nfi_server * serv, char * url) {
+int nfi_tcp_server_rmdir(struct nfi_server * serv, char * url) 
+{
     int ret;
     char server[PATH_MAX], dir[PATH_MAX];
     struct nfi_tcp_server_server * server_aux;
     struct st_tcp_server_msg msg;
 
     DEBUG_BEGIN();
+
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_rmdir: Connection failed\n");
+        return -1;
+    }
+    
 
     // Check arguments...
     NULL_RET_ERR(serv, TCP_SERVERERR_PARAM);
@@ -1655,33 +2015,46 @@ int nfi_tcp_server_rmdir(struct nfi_server * serv, char * url) {
     server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
 
     ret = ParseURL(url, NULL, NULL, NULL, server, NULL, dir);
-    if (ret < 0) {
+    if (ret < 0) 
+    {
         fprintf(stderr, "nfi_tcp_server_rmdir: url %s incorrect.\n", url);
         tcp_server_err(TCP_SERVERERR_URL);
         return -1;
     }
 
     /************** LOCAL *****************/
-    if (server_aux -> params.locality) {
+    if (server_aux -> params.locality) 
+    {
         ret = real_posix_rmdir(dir);
-        if (ret < 0) {
-            debug_error(stderr, "nfi_tcp_server_rmdir: Fail rmdir %s.\n", dir);
+        if (ret < 0) 
+        {
+            debug_info(stderr, "nfi_tcp_server_rmdir: Fail rmdir %s.\n", dir);
             return -1;
         }
     }
     /************** SERVER ****************/
-    else {
+    else 
+    {
         msg.type = TCP_SERVER_RMDIR_DIR;
         debug_info("RMDIR - %d\n", msg.type);
         memccpy(msg.u_st_tcp_server_msg.op_rmdir.path, dir, 0, PATH_MAX - 1);
         nfi_tcp_server_doRequest(server_aux, & msg, (char * ) & (ret), sizeof(int));
 
-        if (ret < 0) {
+        if (ret < 0) 
+        {
             fprintf(stderr, "nfi_tcp_server_rmdir: Fail rmdir %s in server %s.\n", dir, serv -> server);
             tcp_server_err(TCP_SERVERERR_REMOVE);
             return -1;
         }
     }
+
+    int ret2 = doDisconnection( & (server_aux -> params) );
+    if (ret2 < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_rmdir: DisConnection failed\n");
+        return -1;
+    }
+    
 
     DEBUG_END();
 
@@ -1690,7 +2063,8 @@ int nfi_tcp_server_rmdir(struct nfi_server * serv, char * url) {
 
 
 
-int nfi_tcp_server_statfs(__attribute__((__unused__)) struct nfi_server * serv, __attribute__((__unused__)) struct nfi_info * inf) {
+int nfi_tcp_server_statfs(__attribute__((__unused__)) struct nfi_server * serv, __attribute__((__unused__)) struct nfi_info * inf) 
+{
     DEBUG_BEGIN();
 
     /*
@@ -1725,7 +2099,8 @@ int nfi_tcp_server_statfs(__attribute__((__unused__)) struct nfi_server * serv, 
 
 
 
-int nfi_tcp_server_preload(struct nfi_server * serv, char * url, char * virtual_path, char * storage_path, int opt) {
+int nfi_tcp_server_preload(struct nfi_server * serv, char * url, char * virtual_path, char * storage_path, int opt) 
+{
     //char dir[PATH_MAX];
     int ret;
     struct nfi_tcp_server_server * server_aux;
@@ -1773,7 +2148,8 @@ int nfi_tcp_server_preload(struct nfi_server * serv, char * url, char * virtual_
 
 
 
-int nfi_tcp_server_flush(struct nfi_server * serv, char * url, char * virtual_path, char * storage_path, int opt) {
+int nfi_tcp_server_flush(struct nfi_server * serv, char * url, char * virtual_path, char * storage_path, int opt) 
+{
     //char dir[PATH_MAX];
     int ret;
     struct nfi_tcp_server_server * server_aux;

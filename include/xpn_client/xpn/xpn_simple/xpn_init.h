@@ -35,7 +35,7 @@
  #endif
 
 
-   #define XPN_MAX_PART 128
+   #define XPN_MAX_PART 4000
 
    extern struct xpn_partition xpn_parttable[XPN_MAX_PART];
 

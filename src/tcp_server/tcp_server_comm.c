@@ -156,7 +156,7 @@ int tcp_server_comm_init ( tcp_server_param_st * params )
     // create the connections
     params -> global_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (params -> global_sock < 0) {
-        perror("error en el socket: ");
+        perror("error en el socket");
         return -1;
     }
 
@@ -164,7 +164,7 @@ int tcp_server_comm_init ( tcp_server_param_st * params )
     val = 1;
     ret = setsockopt(params -> global_sock, IPPROTO_TCP, TCP_NODELAY, & val, sizeof(val)) ;
     if (ret < 0) {
-        perror("setsockopt: ");
+        perror("setsockopt");
         return -1;
     }
 
@@ -172,7 +172,7 @@ int tcp_server_comm_init ( tcp_server_param_st * params )
     val = 1;
     ret = setsockopt(params -> global_sock, SOL_SOCKET, SO_REUSEADDR, (char * ) & val, sizeof(int));
     if (ret < 0) {
-        perror("error en el setsockopt:");
+        perror("error en el setsockopt");
         return -1;
     }
 
@@ -187,10 +187,10 @@ int tcp_server_comm_init ( tcp_server_param_st * params )
     ret = bind(params -> global_sock, (struct sockaddr * ) & server_addr, sizeof(server_addr));
     if (ret < 0)
     {
-        perror("bind: ");
+        perror("bind");
         return -1;
     }
-    listen(params -> global_sock, 20);
+    listen(params -> global_sock, SOMAXCONN);
 
     /*
      * Initialize mosquitto
@@ -332,6 +332,8 @@ int tcp_server_comm_accept(tcp_server_param_st * params)
     socklen_t size = sizeof(struct sockaddr_in);
 
     DEBUG_BEGIN();
+
+    /*TODO - hacer otra version de esta funcion donde usar un poll primero*/
 
     sc = accept(params -> global_sock, (struct sockaddr * ) & client_addr, & size);
     if (sc < 0)
@@ -548,15 +550,20 @@ ssize_t tcp_server_comm_read_data(tcp_server_param_st * params, int fd, char * d
     DEBUG_BEGIN();
 
     // Check arguments
-    if (NULL == params) {
-        fprintf(stderr, "[SRV_TCP_COMM]: ERROR: NULL params");
+    if (NULL == params) 
+    {
+        fprintf(stderr, "[SRV_TCP_COMM]: ERROR - NULL params");
         return -1;
     }
-    if (size < 0) {
-        fprintf(stderr, "[SRV_TCP_COMM] server %d: ERROR: size < 0", params -> rank);
+
+    if (size < 0) 
+    {
+        fprintf(stderr, "[SRV_TCP_COMM] server %d: ERROR - size < 0", params -> rank);
         return -1;
     }
-    if (size == 0) {
+
+    if (size == 0) 
+    {
         return 0;
     }
 
@@ -564,12 +571,13 @@ ssize_t tcp_server_comm_read_data(tcp_server_param_st * params, int fd, char * d
     do
     {
         ret = 0;
-        debug_info("[SRV_TCP_COMM] server:read_comm(%d) antes: %d = %d data %p --th:%d--\n", fd, size, ret, data, (int) pthread_self());
+        //printf("[SRV_TCP_COMM] server:read_comm(%d) antes: %d = %d data %p --th:%d--\n", fd, size, ret, data, (int) pthread_self());
         //debug_info("Antes Lectura - %d\n", ret);
         ret = read(fd, data + cont, size - cont);
-        //debug_info("Despues Lectura - %d\n", ret);
-        if (ret < 0) {
-            perror("[SRV_TCP_COMM] server: Error read_comm: ");
+        //printf("Despues Lectura - %d\n", ret);
+        if (ret < 0) 
+        {
+            debug_info("[SRV_TCP_COMM] server: Error read_comm");
             return -1;
         }
 

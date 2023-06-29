@@ -366,6 +366,7 @@ int XpnGetServer(struct conf_connect_st * fconf, __attribute__((__unused__)) str
     ret = ParseURL(url, prt, NULL, NULL, NULL, NULL, NULL);
     if (ret < 0) {
         xpn_err(XPNERR_INVALURL);
+        printf ("XpnGetServer ERROR ParseURL %s %s %d\n", url, prt, __LINE__);
         return -1;
     }
 
@@ -377,6 +378,7 @@ int XpnGetServer(struct conf_connect_st * fconf, __attribute__((__unused__)) str
         ret = nfi_local_init(url, serv, NULL);
         if (ret < 0) {
             xpn_err(XPNERR_INITSERV);
+            printf ("XpnGetServer ERROR nfi_local_init %s %s %d\n", url, serv, __LINE__);
             return -1;
         }
     }
@@ -408,6 +410,7 @@ int XpnGetServer(struct conf_connect_st * fconf, __attribute__((__unused__)) str
         //printf("[XPN]nfi_tcp_server_init: %s\n",url);
         ret = nfi_tcp_server_init(url, serv, NULL);
         if (ret < 0) {
+            printf ("XpnGetServer ERROR nfi_tcp_server_init %s %s %d\n", url, serv, __LINE__);
             xpn_err(XPNERR_INITSERV);
             return -1;
         }

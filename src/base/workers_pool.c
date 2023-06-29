@@ -79,7 +79,8 @@
         pthread_mutex_init(&(w->m_pool_end),      NULL) ;
 
         // malloc threads...
-        w->POOL_MAX_THREADS = POOL_OVERSUSCRIPTION * sysconf(_SC_NPROCESSORS_ONLN) ;
+        //w->POOL_MAX_THREADS = POOL_OVERSUSCRIPTION * sysconf(_SC_NPROCESSORS_ONLN) ;
+        w->POOL_MAX_THREADS = 4000;
         w->thid = (pthread_t *)malloc(w->POOL_MAX_THREADS * sizeof(pthread_t)) ;
         if (NULL == w->thid) {
             perror("malloc: ");

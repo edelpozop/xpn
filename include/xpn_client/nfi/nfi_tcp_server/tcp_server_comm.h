@@ -12,6 +12,9 @@
        *  API
        */
 
+      int     doConnection              ( tcpClient_param_st *params ) ;
+      int     doDisconnection           ( tcpClient_param_st *params ) ;
+
       int     tcpClient_comm_init       ( tcpClient_param_st *params ) ;
       int     tcpClient_comm_destroy    ( tcpClient_param_st *params ) ;
       int     tcpClient_comm_connect    ( tcpClient_param_st *params ) ;

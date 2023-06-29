@@ -21,6 +21,7 @@
     int xpn_thread ;
     int xpn_session ;
     int xpn_locality ;
+    int xpn_keep_connection ;
 
 
     //MQTT usage
