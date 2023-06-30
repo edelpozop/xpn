@@ -1127,6 +1127,7 @@ ssize_t nfi_tcp_server_write(struct nfi_server * serv, struct nfi_fhandle * fh, 
                 fd = real_posix_open(fh_aux -> path, O_WRONLY); // WOS
                 if (fd < 0) {
                     debug_info("real_posix_write writes zero bytes from url:%s offset:%ld size:%zu (ret:%zd) errno=%d\n", fh -> url, (long int) offset, size, ret, errno);
+                    int ret2 = doDisconnection( & (server_aux -> params) );
                     return -1;
                 }
 
@@ -1142,6 +1143,7 @@ ssize_t nfi_tcp_server_write(struct nfi_server * serv, struct nfi_fhandle * fh, 
 
             if (ret < 0) {
                 debug_info("real_posix_write writes zero bytes from url:%s offset:%ld size:%zu (ret:%zd) errno=%d\n", fh -> url, (long int) offset, size, ret, errno);
+                int ret2 = doDisconnection( & (server_aux -> params) );
                 return -1;
             }
         }
@@ -1174,6 +1176,7 @@ ssize_t nfi_tcp_server_write(struct nfi_server * serv, struct nfi_fhandle * fh, 
             if (ret < 0) 
             {
                 fprintf(stderr, "(1)ERROR: nfi_tcp_server_write(ID=%s): Error on write operation\n", server_aux -> id);
+                int ret2 = doDisconnection( & (server_aux -> params) );
                 return -1;
             }
 
@@ -1201,6 +1204,7 @@ ssize_t nfi_tcp_server_write(struct nfi_server * serv, struct nfi_fhandle * fh, 
                 if (ret < 0) 
                 {
                     fprintf(stderr, "(2)ERROR: nfi_tcp_server_write(ID=%s): Error on write operation\n", server_aux -> id);
+                    int ret2 = doDisconnection( & (server_aux -> params) );
                     return ret;
                 }
 
@@ -1215,6 +1219,7 @@ ssize_t nfi_tcp_server_write(struct nfi_server * serv, struct nfi_fhandle * fh, 
             if (ret < 0) 
             {
                 fprintf(stderr, "(3)ERROR: nfi_tcp_server_write(ID=%s): Error on write operation\n", server_aux -> id);
+                int ret2 = doDisconnection( & (server_aux -> params) );
                 return -1;
             }
             debug_info("[NFI-TCP] nfi_tcp_server_write(ID=%s): write %s off %d size %d (err:%d).\n", server_aux -> id, fh -> url, (int) offset, (int) size, (int) req.size);
@@ -1222,6 +1227,7 @@ ssize_t nfi_tcp_server_write(struct nfi_server * serv, struct nfi_fhandle * fh, 
             {
                 fprintf(stderr, "ERROR: nfi_tcp_server_write(ID=%s): Fail write %s off %d size %d (err:%d).\n", server_aux -> id, fh -> url, (int) offset, (int) size, (int) req.size);
                 tcp_server_err(TCP_SERVERERR_WRITE);
+                int ret2 = doDisconnection( & (server_aux -> params) );
                 return -1;
             }
 
@@ -1262,6 +1268,7 @@ ssize_t nfi_tcp_server_write(struct nfi_server * serv, struct nfi_fhandle * fh, 
             {
                 fprintf(stderr, "Error publishing write: %s\n", mosquitto_strerror(ret));
                 free(topic);
+                int ret2 = doDisconnection( & (server_aux -> params) );
                 return -1;
             }
             
@@ -1269,6 +1276,8 @@ ssize_t nfi_tcp_server_write(struct nfi_server * serv, struct nfi_fhandle * fh, 
             if (ret < 0) 
             {
                 fprintf(stderr, "(2)ERROR: nfi_tcp_server_write(ID=%s): Error on write operation\n", server_aux -> id);
+                int ret2 = doDisconnection( & (server_aux -> params) );
+                return -1;
             }
 
             free(topic);

@@ -391,13 +391,15 @@ ssize_t tcpClient_read_data ( int fd, char * data, ssize_t size, __attribute__((
     cont = 0;
     do
     {
+        printf("real_read_server - fd: %d\tdata: %d\tcont: %d\tsize: %d\n", fd, data, cont, size);
         ret = real_read(fd, data + cont, size - cont);
 
         debug_info("[NFI_TCP_COMM] client: read_data(%d): %lu = %d ID=%s --th:%d--\n", fd, (unsigned long) size, ret, msg_id, (int) pthread_self());
 
-        if (ret < 0) {
-            perror("tcpClient_read_data: ERROR on real_read: ");
-	    return ret ;
+        if (ret < 0) 
+        {
+            perror("tcpClient_read_data: ERROR on real_read");
+            return ret ;
         }
 
         cont += ret;

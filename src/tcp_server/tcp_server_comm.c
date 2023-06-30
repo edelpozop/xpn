@@ -519,12 +519,11 @@ ssize_t tcp_server_comm_write_data(tcp_server_param_st * params, int fd, char * 
     {
         ret = 0;
         debug_info("[SRV_TCP_COMM] server:write_comm(%d) antes: %d = %d data %p --th:%d--\n", fd, size, ret, data, (int) pthread_self());
-        //debug_info("Antes Escritura - %d\n", ret);
         ret = write(fd, data + cont, size - cont);
-        //debug_info("Despues Escritura - %d\n", ret);
+
         if (ret < 0) {
             perror("server: Error write_comm: ");
-	       return -1;
+            return ret;
         }
 
         debug_info("[SRV_TCP_COMM] server:write_comm(%d) desp: %d = %d data %p --th:%d--\n", fd, size, ret, data, (int) pthread_self());
@@ -572,13 +571,17 @@ ssize_t tcp_server_comm_read_data(tcp_server_param_st * params, int fd, char * d
     {
         ret = 0;
         //printf("[SRV_TCP_COMM] server:read_comm(%d) antes: %d = %d data %p --th:%d--\n", fd, size, ret, data, (int) pthread_self());
-        //debug_info("Antes Lectura - %d\n", ret);
+        printf("read_server - fd: %d\tdata: %s\tcont: %d\tsize: %d\n", fd, data, cont, size);
         ret = read(fd, data + cont, size - cont);
-        //printf("Despues Lectura - %d\n", ret);
         if (ret < 0) 
         {
             debug_info("[SRV_TCP_COMM] server: Error read_comm");
-            return -1;
+            return ret;
+        }
+
+        if (ret == 0)
+        {
+            printf("read_server == 0;\n\n");
         }
 
         debug_info("[SRV_TCP_COMM] server:read_comm(%d) desp: %d = %d data %p --th:%d--\n", fd, size, ret, data, (int) pthread_self());

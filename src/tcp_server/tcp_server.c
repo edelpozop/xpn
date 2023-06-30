@@ -35,8 +35,10 @@
 
 tcp_server_param_st params;
 worker_t worker;
-int the_end = 0, waitingThreads = 0;
+int the_end = 0, waitingThreads = 0, copied = 0;
 char serv_name[HOST_NAME_MAX];
+pthread_mutex_t mutex_1;
+pthread_cond_t cond_cp;
 
 #define MAX_LINE_LENGTH 256
 #define QUEUE_SIZE 2000
@@ -84,7 +86,7 @@ void enqueue(int sd)
     queue.bufSd[queue.rear] = sd;
     queue.count++;
 
-    printf("ServName - %s\tElementos enqueue - %d\n\n", serv_name, queue.count);
+    //printf("ServName - %s\tElementos enqueue - %d\n\n", serv_name, queue.count);
 
     pthread_cond_signal(&queue.not_empty);
     pthread_mutex_unlock(&queue.mutex);
@@ -104,9 +106,10 @@ int dequeue()
     }
 
     int client = queue.bufSd[queue.front];
+    queue.bufSd[queue.front] = -1;
     queue.front = (queue.front + 1) % QUEUE_SIZE;
     queue.count--;
-    printf("ServName - %s\tElementos dequeue - %d\tHilos Esperando - %d\n\n", serv_name, queue.count, waitingThreads);
+    //printf("ServName - %s\tElementos dequeue - %d\tHilos Esperando - %d\n\n", serv_name, queue.count, waitingThreads);
 
     // Despertar a un hilo dormido si la cola aún tiene elementos
     /*if (queue.count > 0) 
@@ -161,7 +164,12 @@ void tcp_server_dispatcher(struct st_th th)
 
     int data = 0;
 
+    printf("pre tcp_server_comm_write_data - %d\n\n", __LINE__);
+
     ret = tcp_server_comm_write_data(th.params, (int) th.sd, (char * ) &data, sizeof(int), 0);
+
+    printf("post tcp_server_comm_write_data - %d\n\n", __LINE__);
+
     if (ret < 0)
     {
         printf("[TCP-SERVER] ERROR: sync write fails\n");
@@ -173,15 +181,21 @@ void tcp_server_dispatcher(struct st_th th)
     //disconnect = 0;
     //while (!disconnect)
     //{
+    printf("pre tcp_server_comm_read_operation - %d\n\n", __LINE__);
+
     ret = tcp_server_comm_read_operation(th.params, (int) th.sd, (char * ) & (th.type_op), 1, & (th.rank_client_id));
 
-    if (ret < 0) {
-        //printf("[TCP-SERVER] ERROR: tcp_server_comm_readdata fail\n");
+    printf("post tcp_server_comm_read_operation - %d\n\n", __LINE__);
+
+    if (ret < 0) 
+    {
+        printf("[TCP-SERVER] ERROR: tcp_server_comm_readdata fail\n");
         return;
     }
 
-    if (ret == 0) {
-        //printf("[TCP-SERVER] WARNING: tcp_server_comm_readdata broken pipe\n");
+    if (ret == 0) 
+    {
+        printf("[TCP-SERVER] WARNING: tcp_server_comm_readdata broken pipe\n");
         return;
     }
 
@@ -212,6 +226,11 @@ void tcp_server_dispatcher(struct st_th th)
 
 void* process_client(void* arg) 
 {
+    pthread_mutex_lock(&mutex_1) ;
+    copied = 1 ;
+    pthread_cond_signal(&cond_cp) ;
+    pthread_mutex_unlock(&mutex_1) ;
+
     struct st_tcp_server_msg head;
     int rank_client_id, ret;
     struct st_th th_arg;
@@ -284,6 +303,10 @@ int tcp_server_up(void)
     int nthreads = 128;
     printf("NUMERO DE HILOS ------------------ %d\n", nthreads);
     pthread_t threads[nthreads];
+
+    pthread_mutex_init(&mutex_1, NULL) ;
+    pthread_cond_init(&cond_cp, NULL) ;
+
     queue_init();
 
     // Feedback
@@ -326,7 +349,15 @@ int tcp_server_up(void)
     // Crear el grupo de hilos (thread pool)
     for (int i = 0; i < nthreads; i++) 
     {
+        copied = 0;
         pthread_create(&threads[i], NULL, process_client, &i);
+
+        pthread_mutex_lock(&mutex_1) ;
+        while (0 == copied) 
+        {
+            pthread_cond_wait(&cond_cp, &mutex_1) ;
+        }
+        pthread_mutex_unlock(&mutex_1) ;
     }
 
     // Loop: receiving + processing
