@@ -26,7 +26,8 @@
 
 #define FILESYSTEM_DLSYM 1
 
-
+#define MAX_RETRIES 5
+#define RETRY_DELAY_MS 1000
 /* ... Functions / Funciones ......................................... */
 
 
@@ -125,17 +126,42 @@ int tcp_server_write_operation(int sd, struct st_tcp_server_msg * head) {
 int nfi_tcp_server_doRequest(struct nfi_tcp_server_server * server_aux, struct st_tcp_server_msg * msg, char * req, int req_size) {
     ssize_t ret;
 
+    int retries = 0;
+
     // send request...
     debug_info("[NFI-TCP] (ID=%s): %s: -> ...\n", server_aux -> id, msg -> id);
-    ret = tcp_server_write_operation(server_aux -> params.server, msg);
+
+    while (retries < MAX_RETRIES)
+    {
+        ret = tcp_server_write_operation(server_aux -> params.server, msg);
+        if (ret >= 0) 
+        {
+            break;
+        }
+        retries++;
+        usleep(RETRY_DELAY_MS);
+    }
+
     if (ret < 0) 
     {
         return -1;
     }
 
+    retries = 0;
+
     // read response...
     debug_info("[NFI-TCP] (ID=%s): %s: <- ...\n", server_aux -> id, msg -> id);
-    ret = tcpClient_read_data(server_aux -> params.server, req, req_size, msg -> id);
+    while (retries < MAX_RETRIES)
+    {
+        ret = tcpClient_read_data(server_aux -> params.server, req, req_size, msg -> id);
+        if (ret >= 0)
+        {
+            break;
+        }
+        retries++;
+        usleep(RETRY_DELAY_MS);
+    }
+    
     if (ret < 0) 
     {
         return -1;
@@ -390,6 +416,12 @@ int nfi_tcp_server_init(char * url, struct nfi_server * serv, __attribute__((__u
         debug_info("Error nfi_tcp_server_connect\n");
         FREE_AND_NULL(serv -> ops);
         FREE_AND_NULL(server_aux);
+        ret = doDisconnection( & (server_aux -> params) );
+        if (ret < 0) 
+        {
+            fprintf(stderr, "ERROR: nfi_tcp_server_init: DisConnection failed\n");
+            return -1;
+        }
         return -1;
     }
 
@@ -404,6 +436,12 @@ int nfi_tcp_server_init(char * url, struct nfi_server * serv, __attribute__((__u
         debug_info("Error tcpClient_read_data\n");
         FREE_AND_NULL(serv -> ops);
         FREE_AND_NULL(server_aux);
+        ret = doDisconnection( & (server_aux -> params) );
+        if (ret < 0) 
+        {
+            fprintf(stderr, "ERROR: nfi_tcp_server_init: DisConnection failed\n");
+            return -1;
+        }
         return -1;
     }
 
@@ -415,6 +453,12 @@ int nfi_tcp_server_init(char * url, struct nfi_server * serv, __attribute__((__u
         debug_info("Error tcpClient_comm_locality\n");
         FREE_AND_NULL(serv -> ops);
         FREE_AND_NULL(server_aux);
+        ret = doDisconnection( & (server_aux -> params) );
+        if (ret < 0) 
+        {
+            fprintf(stderr, "ERROR: nfi_tcp_server_init: DisConnection failed\n");
+            return -1;
+        }
         return -1;
     }
 
@@ -444,6 +488,12 @@ int nfi_tcp_server_init(char * url, struct nfi_server * serv, __attribute__((__u
             if(server_aux -> mqtt == NULL)
             {
                 fprintf(stderr, "Error: Out of memory.\n");
+                ret = doDisconnection( & (server_aux -> params) );
+                if (ret < 0) 
+                {
+                    fprintf(stderr, "ERROR: nfi_tcp_server_init: DisConnection failed\n");
+                    return -1;
+                }
                 return -1;
             }
 
@@ -457,6 +507,12 @@ int nfi_tcp_server_init(char * url, struct nfi_server * serv, __attribute__((__u
             {
                 mosquitto_destroy(server_aux -> mqtt);
                 fprintf(stderr, "Error: %s\n", mosquitto_strerror(rc));
+                ret = doDisconnection( & (server_aux -> params) );
+                if (ret < 0) 
+                {
+                    fprintf(stderr, "ERROR: nfi_tcp_server_init: DisConnection failed\n");
+                    return -1;
+                }
                 return 1;
             }
 
@@ -467,6 +523,12 @@ int nfi_tcp_server_init(char * url, struct nfi_server * serv, __attribute__((__u
             {
                 mosquitto_destroy(server_aux -> mqtt);
                 fprintf(stderr, "Error: %s\n", mosquitto_strerror(rc));
+                ret = doDisconnection( & (server_aux -> params) );
+                if (ret < 0) 
+                {
+                    fprintf(stderr, "ERROR: nfi_tcp_server_init: DisConnection failed\n");
+                    return -1;
+                }
                 return 1;
             }
         }
@@ -704,8 +766,15 @@ int nfi_tcp_server_open(struct nfi_server * serv, char * url, struct nfi_fhandle
 
     // from url -> server + dir
     ret = ParseURL(url, NULL, NULL, NULL, server, NULL, dir);
-    if (ret < 0) {
+    if (ret < 0) 
+    {
         fprintf(stderr, "nfi_tcp_server_open: url %s incorrect.\n", url);
+        ret = doDisconnection( & (server_aux -> params) );
+        if (ret < 0) 
+        {
+            fprintf(stderr, "ERROR: nfi_tcp_server_open: DisConnection failed\n");
+            return -1;
+        }
         tcp_server_err(TCP_SERVERERR_URL);
         return -1;
     }
@@ -714,7 +783,14 @@ int nfi_tcp_server_open(struct nfi_server * serv, char * url, struct nfi_fhandle
     NULL_RET_ERR(fho -> url, TCP_SERVERERR_MEMORY);
 
     fh_aux = (struct nfi_tcp_server_fhandle * ) malloc(sizeof(struct nfi_tcp_server_fhandle));
-    if (fh_aux == NULL) {
+    if (fh_aux == NULL) 
+    {
+        ret = doDisconnection( & (server_aux -> params) );
+        if (ret < 0) 
+        {
+            fprintf(stderr, "ERROR: nfi_tcp_server_open: DisConnection failed\n");
+            return -1;
+        }
         tcp_server_err(TCP_SERVERERR_MEMORY);
         FREE_AND_NULL(fho -> url);
         return -1;
@@ -755,6 +831,12 @@ int nfi_tcp_server_open(struct nfi_server * serv, char * url, struct nfi_fhandle
         if (fh_aux -> fd < 0) 
         {
             debug_info("real_posix_open fails to open '%s' in server %s.\n", dir, serv -> server);
+            ret = doDisconnection( & (server_aux -> params) );
+            if (ret < 0) 
+            {
+                fprintf(stderr, "ERROR: nfi_tcp_server_open: DisConnection failed\n");
+                return -1;
+            }
             FREE_AND_NULL(fh_aux);
             FREE_AND_NULL(fho -> url);
             return -1;
@@ -819,6 +901,12 @@ int nfi_tcp_server_create(struct nfi_server * serv, char * url, struct nfi_attr 
     ret = ParseURL(url, NULL, NULL, NULL, server, NULL, dir);
     if (ret < 0) {
         fprintf(stderr, "ERROR: nfi_tcp_server_create: url %s incorrect.\n", url);
+        ret = doDisconnection( & (server_aux -> params) );
+        if (ret < 0) 
+        {
+            fprintf(stderr, "ERROR: nfi_tcp_server_open: DisConnection failed\n");
+            return -1;
+        }
         tcp_server_err(TCP_SERVERERR_URL);
         return -1;
     }
@@ -838,6 +926,11 @@ int nfi_tcp_server_create(struct nfi_server * serv, char * url, struct nfi_attr 
         {
             debug_info("files_posix_open fails to creat '%s' in server '%s'.\n", dir, serv -> server);
             FREE_AND_NULL(fh_aux);
+            if (ret < 0) 
+            {
+                fprintf(stderr, "ERROR: nfi_tcp_server_open: DisConnection failed\n");
+                return -1;
+            }
             DEBUG_END();
             return -1;
         }
@@ -847,7 +940,13 @@ int nfi_tcp_server_create(struct nfi_server * serv, char * url, struct nfi_attr 
         if (ret < 0) 
         {
             debug_info("nfi_tcp_server_create: Fail stat %s.\n", dir);
+            ret = doDisconnection( & (server_aux -> params) );
             FREE_AND_NULL(fh_aux);
+            if (ret < 0) 
+            {
+                fprintf(stderr, "ERROR: nfi_tcp_server_open: DisConnection failed\n");
+                return -1;
+            }
             DEBUG_END();
             return ret;
         }
@@ -880,7 +979,13 @@ int nfi_tcp_server_create(struct nfi_server * serv, char * url, struct nfi_attr 
         if (fh_aux -> fd < 0) 
         {
             //printf("doRequest(creat) fails to open '%s' in server %s.\n", dir, serv -> server);
+            ret = doDisconnection( & (server_aux -> params) );
             FREE_AND_NULL(fh_aux);
+            if (ret < 0) 
+            {
+                fprintf(stderr, "ERROR: nfi_tcp_server_open: DisConnection failed\n");
+                return -1;
+            }
             DEBUG_END();
             return -1;
         }
@@ -907,7 +1012,13 @@ int nfi_tcp_server_create(struct nfi_server * serv, char * url, struct nfi_attr 
     if (fh -> url == NULL) 
     {
         tcp_server_err(TCP_SERVERERR_MEMORY);
+        ret = doDisconnection( & (server_aux -> params) );
         FREE_AND_NULL(fh_aux);
+        if (ret < 0) 
+        {
+            fprintf(stderr, "ERROR: nfi_tcp_server_open: DisConnection failed\n");
+            return -1;
+        }
         DEBUG_END();
         return -1;
     }
@@ -976,6 +1087,12 @@ ssize_t nfi_tcp_server_read(struct nfi_server * serv, struct nfi_fhandle * fh, v
             if (fd < 0) 
             {
                 debug_info("real_posix_read reads zero bytes from url:%s offset:%ld size:%zu (ret:%zd) errno=%d\n", fh -> url, (long int) offset, size, ret, errno);
+                ret = doDisconnection( & (server_aux -> params) );
+                if (ret < 0) 
+                {
+                    fprintf(stderr, "ERROR: nfi_tcp_server_read: DisConnection failed\n");
+                    return -1;
+                }
                 return -1;
             }
 
@@ -989,8 +1106,10 @@ ssize_t nfi_tcp_server_read(struct nfi_server * serv, struct nfi_fhandle * fh, v
             real_posix_close(fd);
         }
 
-        if (ret < 0) {
+        if (ret < 0) 
+        {
             debug_info("real_posix_read reads zero bytes from url:%s offset:%ld size:%zu (ret:%zd) errno=%d\n", fh -> url, (long int) offset, size, ret, errno);
+            ret = doDisconnection( & (server_aux -> params) );
             return -1;
         }
     }
@@ -1016,6 +1135,12 @@ ssize_t nfi_tcp_server_read(struct nfi_server * serv, struct nfi_fhandle * fh, v
         ret = tcp_server_write_operation(server_aux -> params.server, & msg);
         if (ret < 0) {
             fprintf(stderr, "ERROR: (1)nfi_tcp_server_read: Error on write operation\n");
+            ret = doDisconnection( & (server_aux -> params) );
+            if (ret < 0) 
+            {
+                fprintf(stderr, "ERROR: nfi_tcp_server_read: DisConnection failed\n");
+                return -1;
+            }
             return -1;
         }
 
@@ -1025,20 +1150,36 @@ ssize_t nfi_tcp_server_read(struct nfi_server * serv, struct nfi_fhandle * fh, v
             ret = tcpClient_read_data(server_aux -> params.server, (char * ) & req, sizeof(struct st_tcp_server_read_req), msg.id);
             debug_info("[NFI-TCP] nfi_tcp_server_read(ID=%s): (1)tcpClient_read_data = %d.\n", server_aux -> id, ret);
 
-            if (ret < 0) {
+            if (ret < 0) 
+            {
                 fprintf(stderr, "ERROR: (2)nfi_tcp_server_read: Error on write operation\n");
+                ret = doDisconnection( & (server_aux -> params) );
+                if (ret < 0) 
+                {
+                    fprintf(stderr, "ERROR: nfi_tcp_server_read: DisConnection failed\n");
+                    return -1;
+                }
                 return -1;
             }
 
             // TODO: tcp_server_ops.c:465  -> if (req.size < 0) -> error on server side so... something must be done on client side
 
-            if (req.size > 0) {
+            if (req.size > 0) 
+            {
                 debug_info("[NFI-TCP] nfi_tcp_server_read(ID=%s): (2)tcpClient_read_data = %d. size = %d\n", server_aux -> id, ret, req.size);
                 ret = tcpClient_read_data(server_aux -> params.server, (char * ) buffer + cont, req.size, msg.id);
                 debug_info("[NFI-TCP] nfi_tcp_server_read(ID=%s): (2)tcpClient_read_data = %d.\n", server_aux -> id, ret);
 
-                if (ret < 0) {
+                if (ret < 0) 
+                {
                     fprintf(stderr, "ERROR: (3)nfi_tcp_server_read: Error on read operation\n");
+                    ret = doDisconnection( & (server_aux -> params) );
+                    if (ret < 0) 
+                    {
+                        fprintf(stderr, "ERROR: nfi_tcp_server_read: DisConnection failed\n");
+                        return -1;
+                    }
+                    return -1;
                 }
             }
 
@@ -1047,9 +1188,16 @@ ssize_t nfi_tcp_server_read(struct nfi_server * serv, struct nfi_fhandle * fh, v
 
         } while ((diff > 0) && (req.size != 0));
 
-        if (req.size < 0) {
+        if (req.size < 0) 
+        {
             fprintf(stderr, "ERROR: nfi_tcp_server_read: Fail read %s off %d size %d (err:%d).\n", fh -> url, (int) offset, (int) size, (int) req.size);
             tcp_server_err(TCP_SERVERERR_READ);
+            ret = doDisconnection( & (server_aux -> params) );
+            if (ret < 0) 
+            {
+                fprintf(stderr, "ERROR: nfi_tcp_server_read: DisConnection failed\n");
+                return -1;
+            }
             return -1;
         }
 
@@ -1332,11 +1480,23 @@ int nfi_tcp_server_close(struct nfi_server * serv, struct nfi_fhandle * fh) {
     if (server_aux -> params.xpn_session == 0) 
     {
         debug_info("[NFI-TCP] nfi_tcp_server_close(ID=%s): end\n", server_aux -> id);
+        ret = doDisconnection( & (server_aux -> params) );
+        if (ret < 0) 
+        {
+            fprintf(stderr, "ERROR: nfi_tcp_server_close: DisConnection failed\n");
+            return -1;
+        }
         return 1;
     }
 
     if (NULL == fh -> priv_fh) {
         debug_info("[NFI-TCP] nfi_tcp_server_close(ID=%s): end\n", server_aux -> id);
+        ret = doDisconnection( & (server_aux -> params) );
+        if (ret < 0) 
+        {
+            fprintf(stderr, "ERROR: nfi_tcp_server_close: DisConnection failed\n");
+            return -1;
+        }
         return -1;
     }
 
@@ -1420,6 +1580,12 @@ int nfi_tcp_server_remove(struct nfi_server * serv, char * url)
     {
         fprintf(stderr, "nfi_tcp_server_remove: url %s incorrect.\n", url);
         tcp_server_err(TCP_SERVERERR_URL);
+        ret = doDisconnection( & (server_aux -> params) );
+        if (ret < 0) 
+        {
+            fprintf(stderr, "ERROR: nfi_tcp_server_remove: DisConnection failed\n");
+            return -1;
+        }
         return -1;
     }
 
@@ -1427,8 +1593,15 @@ int nfi_tcp_server_remove(struct nfi_server * serv, char * url)
     if (server_aux -> params.locality) 
     {
         ret = real_posix_unlink(dir);
-        if (ret < 0) {
+        if (ret < 0) 
+        {
             debug_info("real_posix_open fails to open '%s' in server %s.\n", dir, serv -> server);
+            ret = doDisconnection( & (server_aux -> params) );
+            if (ret < 0) 
+            {
+                fprintf(stderr, "ERROR: nfi_tcp_server_close: DisConnection failed\n");
+                return -1;
+            }
             return -1;
         }
     }
@@ -1466,14 +1639,6 @@ int nfi_tcp_server_rename(struct nfi_server * serv, char * old_url, char * new_u
 
     DEBUG_BEGIN();
 
-    ret = doConnection( & (server_aux -> params) );
-    if (ret < 0) 
-    {
-        fprintf(stderr, "ERROR: nfi_tcp_server_rename: Connection failed\n");
-        return -1;
-    }
-    
-
     // Check arguments...
     NULL_RET_ERR(serv, TCP_SERVERERR_PARAM);
     NULL_RET_ERR(old_url, TCP_SERVERERR_PARAM);
@@ -1484,9 +1649,23 @@ int nfi_tcp_server_rename(struct nfi_server * serv, char * old_url, char * new_u
     // private_info...
     server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
     debug_info("[NFI-TCP] nfi_tcp_server_remove(%s): begin %s\n", server_aux -> id, new_url);
+
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_rename: Connection failed\n");
+        return -1;
+    }
+
     if (server_aux == NULL) 
     {
         tcp_server_err(TCP_SERVERERR_PARAM);
+        ret = doDisconnection( & (server_aux -> params) );
+        if (ret < 0) 
+        {
+            fprintf(stderr, "ERROR: nfi_tcp_server_rename: DisConnection failed\n");
+            return -1;
+        }
         return -1;
     }
 
@@ -1495,6 +1674,12 @@ int nfi_tcp_server_rename(struct nfi_server * serv, char * old_url, char * new_u
     {
         fprintf(stderr, "nfi_tcp_server_open: url %s incorrect.\n", old_url);
         tcp_server_err(TCP_SERVERERR_URL);
+        ret = doDisconnection( & (server_aux -> params) );
+        if (ret < 0) 
+        {
+            fprintf(stderr, "ERROR: nfi_tcp_server_rename: DisConnection failed\n");
+            return -1;
+        }
         return -1;
     }
 
@@ -1503,6 +1688,12 @@ int nfi_tcp_server_rename(struct nfi_server * serv, char * old_url, char * new_u
     {
         fprintf(stderr, "nfi_tcp_server_open: url %s incorrect.\n", new_url);
         tcp_server_err(TCP_SERVERERR_URL);
+        ret = doDisconnection( & (server_aux -> params) );
+        if (ret < 0) 
+        {
+            fprintf(stderr, "ERROR: nfi_tcp_server_rename: DisConnection failed\n");
+            return -1;
+        }
         return -1;
     }
 
@@ -1513,6 +1704,12 @@ int nfi_tcp_server_rename(struct nfi_server * serv, char * old_url, char * new_u
         if (ret < 0) 
         {
             debug_info("real_posix_rename fails to rename '%s' in server %s.\n", old_path, serv -> server);
+            ret = doDisconnection( & (server_aux -> params) );
+            if (ret < 0) 
+            {
+                fprintf(stderr, "ERROR: nfi_tcp_server_rename: DisConnection failed\n");
+                return -1;
+            }
             return -1;
         }
     }
@@ -1552,15 +1749,7 @@ int nfi_tcp_server_getattr(struct nfi_server * serv, struct nfi_fhandle * fh, st
     struct st_tcp_server_msg msg;
     struct st_tcp_server_attr_req req;
 
-    DEBUG_BEGIN();
-
-    ret = doConnection( & (server_aux -> params) );
-    if (ret < 0) 
-    {
-        fprintf(stderr, "ERROR: nfi_tcp_server_getattr: Connection failed\n");
-        return -1;
-    }
-    
+    DEBUG_BEGIN();    
 
     // check arguments...
     NULL_RET_ERR(serv, TCP_SERVERERR_PARAM);
@@ -1573,10 +1762,23 @@ int nfi_tcp_server_getattr(struct nfi_server * serv, struct nfi_fhandle * fh, st
     //fh_aux     = (struct nfi_tcp_server_fhandle *) fh->priv_fh; //TODO: fstat
     server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
 
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_getattr: Connection failed\n");
+        return -1;
+    }
+
     ret = ParseURL(fh -> url, NULL, NULL, NULL, server, NULL, dir);
     if (ret < 0) {
         fprintf(stderr, "nfi_tcp_server_getattr: url %s incorrect.\n", dir);
         tcp_server_err(TCP_SERVERERR_URL);
+        ret = doDisconnection( & (server_aux -> params) );
+        if (ret < 0) 
+        {
+            fprintf(stderr, "ERROR: nfi_tcp_server_getattr: DisConnection failed\n");
+            return -1;
+        }
         return -1;
     }
 
@@ -1586,6 +1788,13 @@ int nfi_tcp_server_getattr(struct nfi_server * serv, struct nfi_fhandle * fh, st
         req.status = real_posix_stat(dir, & (req.attr));
         if (((int) req.status) < 0) {
             debug_info("nfi_tcp_server_getattr: Fail stat %s.\n", dir);
+
+            ret= doDisconnection( & (server_aux -> params) );
+            if (ret < 0) 
+            {
+                fprintf(stderr, "ERROR: nfi_tcp_server_getattr: DisConnection failed\n");
+                return -1;
+            }
             return req.status;
         }
     }
@@ -1655,15 +1864,7 @@ int nfi_tcp_server_mkdir(struct nfi_server * serv, char * url, struct nfi_attr *
     struct st_tcp_server_msg msg;
     struct st_tcp_server_attr_req req;
 
-    DEBUG_BEGIN();
-
-    ret = doConnection( & (server_aux -> params) );
-    if (ret < 0) 
-    {
-        fprintf(stderr, "ERROR: nfi_tcp_server_mkdir: Connection failed\n");
-        return -1;
-    }
-    
+    DEBUG_BEGIN();    
 
     // Check arguments...
     NULL_RET_ERR(serv, TCP_SERVERERR_PARAM);
@@ -1674,11 +1875,24 @@ int nfi_tcp_server_mkdir(struct nfi_server * serv, char * url, struct nfi_attr *
     // private_info...
     server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
 
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_mkdir: Connection failed\n");
+        return -1;
+    }
+
     ret = ParseURL(url, NULL, NULL, NULL, server, NULL, dir);
     if (ret < 0) 
     {
         fprintf(stderr, "nfi_tcp_server_mkdir: url %s incorrect.\n", url);
         tcp_server_err(TCP_SERVERERR_URL);
+        ret = doDisconnection( & (server_aux -> params) );
+        if (ret < 0) 
+        {
+            fprintf(stderr, "ERROR: nfi_tcp_server_mkdir: DisConnection failed\n");
+            return -1;
+        }
         return -1;
     }
 
@@ -1695,14 +1909,27 @@ int nfi_tcp_server_mkdir(struct nfi_server * serv, char * url, struct nfi_attr *
         {
             debug_info("nfi_tcp_server_mkdir: Fail mkdir %s.\n", dir);
             FREE_AND_NULL(fh_aux);
+            ret = doDisconnection( & (server_aux -> params) );
+            if (ret < 0) 
+            {
+                fprintf(stderr, "ERROR: nfi_tcp_server_mkdir: DisConnection failed\n");
+                return -1;
+            }
             return -1;
         }
         fh_aux -> fd = ret; //Cuidado
 
         //Get stat
         ret = real_posix_stat(dir, & (req.attr));
-        if (ret < 0) {
+        if (ret < 0) 
+        {
             debug_info("nfi_tcp_server_create: Fail stat %s.\n", dir);
+            ret = doDisconnection( & (server_aux -> params) );
+            if (ret < 0) 
+            {
+                fprintf(stderr, "ERROR: nfi_tcp_server_mkdir: DisConnection failed\n");
+                return -1;
+            }
             return ret;
         }
     }
@@ -1720,6 +1947,12 @@ int nfi_tcp_server_mkdir(struct nfi_server * serv, char * url, struct nfi_attr *
             tcp_server_err(TCP_SERVERERR_MKDIR);
             fprintf(stderr, "nfi_tcp_server_mkdir: Fail mkdir %s in server %s.\n", dir, serv -> server);
             FREE_AND_NULL(fh_aux);
+            ret = doDisconnection( & (server_aux -> params) );
+            if (ret < 0) 
+            {
+                fprintf(stderr, "ERROR: nfi_tcp_server_mkdir: DisConnection failed\n");
+                return -1;
+            }
             return -1;
         }
 
@@ -1738,6 +1971,13 @@ int nfi_tcp_server_mkdir(struct nfi_server * serv, char * url, struct nfi_attr *
     if (fh -> url == NULL) {
         tcp_server_err(TCP_SERVERERR_MEMORY);
         FREE_AND_NULL(fh_aux);
+
+        ret = doDisconnection( & (server_aux -> params) );
+        if (ret < 0) 
+        {
+            fprintf(stderr, "ERROR: nfi_tcp_server_mkdir: DisConnection failed\n");
+            return -1;
+        }
         return -1;
     }
 
@@ -1766,15 +2006,7 @@ int nfi_tcp_server_opendir(struct nfi_server * serv, char * url, struct nfi_fhan
     struct nfi_tcp_server_fhandle * fh_aux;
     struct st_tcp_server_msg msg;
 
-    DEBUG_BEGIN();
-
-    ret = doConnection( & (server_aux -> params) );
-    if (ret < 0) 
-    {
-        fprintf(stderr, "ERROR: nfi_tcp_server_opendir: Connection failed\n");
-        return -1;
-    }
-    
+    DEBUG_BEGIN();    
 
     // Check arguments...
     NULL_RET_ERR(serv, TCP_SERVERERR_PARAM);
@@ -1803,6 +2035,13 @@ int nfi_tcp_server_opendir(struct nfi_server * serv, char * url, struct nfi_fhan
 
     server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
 
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_opendir: Connection failed\n");
+        return -1;
+    }
+
     /************** LOCAL *****************/
     if (server_aux -> params.locality) 
     {
@@ -1812,6 +2051,15 @@ int nfi_tcp_server_opendir(struct nfi_server * serv, char * url, struct nfi_fhan
             FREE_AND_NULL(fh_aux);
             FREE_AND_NULL(fho -> url);
             debug_info("real_posix_opendir fails to open directory '%s' in server '%s'.\n", dir, serv -> server);
+
+
+            ret = doDisconnection( & (server_aux -> params) );
+            if (ret < 0) 
+            {
+                fprintf(stderr, "ERROR: nfi_tcp_server_opendir: DisConnection failed\n");
+                return -1;
+            }
+
             return -1;
         }
     }
@@ -1857,15 +2105,7 @@ int nfi_tcp_server_readdir(struct nfi_server * serv, struct nfi_fhandle * fh, st
     struct st_tcp_server_direntry ret_entry;
     struct dirent * ent;
 
-    DEBUG_BEGIN();
-
-    ret = doConnection( & (server_aux -> params) );
-    if (ret < 0) 
-    {
-        fprintf(stderr, "ERROR: nfi_tcp_server_readdir: Connection failed\n");
-        return -1;
-    }
-    
+    DEBUG_BEGIN();    
 
     // Check arguments...
     NULL_RET_ERR(serv, TCP_SERVERERR_PARAM);
@@ -1885,6 +2125,13 @@ int nfi_tcp_server_readdir(struct nfi_server * serv, struct nfi_fhandle * fh, st
     server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
     fh_aux = (struct nfi_tcp_server_fhandle * ) fh -> priv_fh;
 
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_readdir: Connection failed\n");
+        return -1;
+    }
+
     // clean all entry content
     memset(entry, 0, sizeof(struct dirent));
 
@@ -1894,6 +2141,12 @@ int nfi_tcp_server_readdir(struct nfi_server * serv, struct nfi_fhandle * fh, st
         ent = real_posix_readdir(fh_aux -> dir);
         if (ent == NULL) {
             debug_info("nfi_tcp_server_readdir: readdir");
+            ret = doDisconnection( & (server_aux -> params) );
+            if (ret < 0) 
+            {
+                fprintf(stderr, "ERROR: nfi_tcp_server_readdir: DisConnection failed\n");
+                return -1;
+            }
             return -1;
         }
 
@@ -1910,6 +2163,12 @@ int nfi_tcp_server_readdir(struct nfi_server * serv, struct nfi_fhandle * fh, st
 
         if (ret_entry.end == 0) 
         {
+            ret = doDisconnection( & (server_aux -> params) );
+            if (ret < 0) 
+            {
+                fprintf(stderr, "ERROR: nfi_tcp_server_readdir: DisConnection failed\n");
+                return -1;
+            }
             return -1;
         }
 
@@ -1938,15 +2197,7 @@ int nfi_tcp_server_closedir(struct nfi_server * serv, struct nfi_fhandle * fh)
     struct nfi_tcp_server_server * server_aux;
     struct nfi_tcp_server_fhandle * fh_aux;
 
-    DEBUG_BEGIN();
-
-    ret = doConnection( & (server_aux -> params) );
-    if (ret < 0) 
-    {
-        fprintf(stderr, "ERROR: nfi_tcp_server_closedir: Connection failed\n");
-        return -1;
-    }
-    
+    DEBUG_BEGIN();    
 
     // Check arguments...
     NULL_RET_ERR(serv, TCP_SERVERERR_PARAM);
@@ -1960,6 +2211,13 @@ int nfi_tcp_server_closedir(struct nfi_server * serv, struct nfi_fhandle * fh)
         // private_info...
         server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
         fh_aux = (struct nfi_tcp_server_fhandle * ) fh -> priv_fh;
+
+        ret = doConnection( & (server_aux -> params) );
+        if (ret < 0) 
+        {
+            fprintf(stderr, "ERROR: nfi_tcp_server_closedir: Connection failed\n");
+            return -1;
+        }
 
         /************** LOCAL *****************/
         if (server_aux -> params.locality) 
@@ -1980,15 +2238,15 @@ int nfi_tcp_server_closedir(struct nfi_server * serv, struct nfi_fhandle * fh)
 
         // free memory
         FREE_AND_NULL(fh -> priv_fh);
-    }
 
-    int ret2 = doDisconnection( & (server_aux -> params) );
-    if (ret2 < 0) 
-    {
-        fprintf(stderr, "ERROR: nfi_tcp_server_closedir: DisConnection failed\n");
-        return -1;
+        int ret2 = doDisconnection( & (server_aux -> params) );
+        if (ret2 < 0) 
+        {
+            fprintf(stderr, "ERROR: nfi_tcp_server_closedir: DisConnection failed\n");
+            return -1;
+        }
+        
     }
-    
 
     DEBUG_END();
 
@@ -2004,15 +2262,7 @@ int nfi_tcp_server_rmdir(struct nfi_server * serv, char * url)
     struct nfi_tcp_server_server * server_aux;
     struct st_tcp_server_msg msg;
 
-    DEBUG_BEGIN();
-
-    ret = doConnection( & (server_aux -> params) );
-    if (ret < 0) 
-    {
-        fprintf(stderr, "ERROR: nfi_tcp_server_rmdir: Connection failed\n");
-        return -1;
-    }
-    
+    DEBUG_BEGIN();    
 
     // Check arguments...
     NULL_RET_ERR(serv, TCP_SERVERERR_PARAM);
@@ -2023,11 +2273,24 @@ int nfi_tcp_server_rmdir(struct nfi_server * serv, char * url)
     // private_info...
     server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
 
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_rmdir: Connection failed\n");
+        return -1;
+    }
+
     ret = ParseURL(url, NULL, NULL, NULL, server, NULL, dir);
     if (ret < 0) 
     {
         fprintf(stderr, "nfi_tcp_server_rmdir: url %s incorrect.\n", url);
         tcp_server_err(TCP_SERVERERR_URL);
+        ret = doDisconnection( & (server_aux -> params) );
+        if (ret < 0) 
+        {
+            fprintf(stderr, "ERROR: nfi_tcp_server_rmdir: DisConnection failed\n");
+            return -1;
+        }
         return -1;
     }
 
@@ -2038,6 +2301,12 @@ int nfi_tcp_server_rmdir(struct nfi_server * serv, char * url)
         if (ret < 0) 
         {
             debug_info(stderr, "nfi_tcp_server_rmdir: Fail rmdir %s.\n", dir);
+            ret = doDisconnection( & (server_aux -> params) );
+            if (ret < 0) 
+            {
+                fprintf(stderr, "ERROR: nfi_tcp_server_rmdir: DisConnection failed\n");
+                return -1;
+            }
             return -1;
         }
     }
@@ -2053,6 +2322,12 @@ int nfi_tcp_server_rmdir(struct nfi_server * serv, char * url)
         {
             fprintf(stderr, "nfi_tcp_server_rmdir: Fail rmdir %s in server %s.\n", dir, serv -> server);
             tcp_server_err(TCP_SERVERERR_REMOVE);
+            ret = doDisconnection( & (server_aux -> params) );
+            if (ret < 0) 
+            {
+                fprintf(stderr, "ERROR: nfi_tcp_server_rmdir: DisConnection failed\n");
+                return -1;
+            }
             return -1;
         }
     }

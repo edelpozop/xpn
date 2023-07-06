@@ -181,11 +181,11 @@ void tcp_server_dispatcher(struct st_th th)
     //disconnect = 0;
     //while (!disconnect)
     //{
-    printf("pre tcp_server_comm_read_operation - %d\n\n", __LINE__);
+    //printf("pre tcp_server_comm_read_operation - %d\n\n", __LINE__);
 
     ret = tcp_server_comm_read_operation(th.params, (int) th.sd, (char * ) & (th.type_op), 1, & (th.rank_client_id));
 
-    printf("post tcp_server_comm_read_operation - %d\n\n", __LINE__);
+    //printf("post tcp_server_comm_read_operation - %d\n\n", __LINE__);
 
     if (ret < 0) 
     {
@@ -300,7 +300,7 @@ int tcp_server_up(void)
     sem_t * sem_server ;
     int sd;
     //int nthreads = sysconf(_SC_NPROCESSORS_ONLN);
-    int nthreads = 128;
+    int nthreads = 64;
     printf("NUMERO DE HILOS ------------------ %d\n", nthreads);
     pthread_t threads[nthreads];
 
