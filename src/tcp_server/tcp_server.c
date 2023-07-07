@@ -164,11 +164,11 @@ void tcp_server_dispatcher(struct st_th th)
 
     int data = 0;
 
-    printf("pre tcp_server_comm_write_data - %d\n\n", __LINE__);
+    debug_info("pre tcp_server_comm_write_data - %d\n\n", __LINE__);
 
     ret = tcp_server_comm_write_data(th.params, (int) th.sd, (char * ) &data, sizeof(int), 0);
 
-    printf("post tcp_server_comm_write_data - %d\n\n", __LINE__);
+    debug_info("post tcp_server_comm_write_data - %d\n\n", __LINE__);
 
     if (ret < 0)
     {
@@ -189,13 +189,13 @@ void tcp_server_dispatcher(struct st_th th)
 
     if (ret < 0) 
     {
-        printf("[TCP-SERVER] ERROR: tcp_server_comm_readdata fail\n");
+        debug_info("[TCP-SERVER] ERROR: tcp_server_comm_readdata fail\n");
         return;
     }
 
     if (ret == 0) 
     {
-        printf("[TCP-SERVER] WARNING: tcp_server_comm_readdata broken pipe\n");
+        debug_info("[TCP-SERVER] WARNING: tcp_server_comm_readdata broken pipe\n");
         return;
     }
 
@@ -248,14 +248,14 @@ void* process_client(void* arg)
 
         if (ret < 0) 
         {
-            printf("[TCP-SERVER] ERROR: tcp_server_comm_readdata fail\n");
+            debug_info("[TCP-SERVER] ERROR: tcp_server_comm_readdata fail\n");
             continue;
         }
 
         if (head.type == TCP_SERVER_FINALIZE) 
         {
             the_end = 1;
-            printf("[TCP-SERVER]: tcp_server finalized\n");
+            debug_info("[TCP-SERVER]: tcp_server finalized\n");
             continue;
         }
 
@@ -267,11 +267,11 @@ void* process_client(void* arg)
         th_arg.rank_client_id = 0;
         th_arg.wait4me = FALSE;
 
-        printf("Thread pre-dispatcher\n\n");
+        debug_info("Thread pre-dispatcher\n\n");
 
         tcp_server_dispatcher( th_arg );
 
-        printf("Thread post-dispatcher\n\n");
+        debug_info("Thread post-dispatcher\n\n");
 
         //workers_launch( & worker, & th_arg, tcp_server_dispatcher);
 

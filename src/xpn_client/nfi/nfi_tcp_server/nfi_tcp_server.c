@@ -883,7 +883,6 @@ int nfi_tcp_server_create(struct nfi_server * serv, char * url, struct nfi_attr 
     NULL_RET_ERR(attr, TCP_SERVERERR_PARAM);
     nfi_tcp_server_keepConnected(serv);
     NULL_RET_ERR(serv -> private_info, TCP_SERVERERR_PARAM);
-
     // private_info...
     server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
     debug_info("[NFI-TCP] nfi_tcp_server_create(ID=%s): begin %s\n", server_aux -> id, url);
@@ -894,7 +893,6 @@ int nfi_tcp_server_create(struct nfi_server * serv, char * url, struct nfi_attr 
         fprintf(stderr, "ERROR: nfi_tcp_server_create: Connection failed\n");
         return -1;
     }
-
     //printf("[NFI_TCP_SERVER] CREATE WOS - %s\n", url);
 
     // url -> server + dir
@@ -910,14 +908,12 @@ int nfi_tcp_server_create(struct nfi_server * serv, char * url, struct nfi_attr 
         tcp_server_err(TCP_SERVERERR_URL);
         return -1;
     }
-
     // private_info file handle
     fh_aux = (struct nfi_tcp_server_fhandle * ) malloc(sizeof(struct nfi_tcp_server_fhandle));
     NULL_RET_ERR(fh_aux, TCP_SERVERERR_MEMORY);
     bzero(fh_aux, sizeof(struct nfi_tcp_server_fhandle));
 
     // create the file into the directory
-
     /************** LOCAL *****************/
     if (server_aux -> params.locality) 
     {
@@ -926,6 +922,7 @@ int nfi_tcp_server_create(struct nfi_server * serv, char * url, struct nfi_attr 
         {
             debug_info("files_posix_open fails to creat '%s' in server '%s'.\n", dir, serv -> server);
             FREE_AND_NULL(fh_aux);
+            ret = doDisconnection( & (server_aux -> params) );
             if (ret < 0) 
             {
                 fprintf(stderr, "ERROR: nfi_tcp_server_open: DisConnection failed\n");
@@ -970,7 +967,6 @@ int nfi_tcp_server_create(struct nfi_server * serv, char * url, struct nfi_attr 
         memccpy(msg.id, server_aux -> id, 0, TCP_SERVER_ID - 1);
         memccpy(msg.u_st_tcp_server_msg.op_creat.path, dir, 0, PATH_MAX - 1);
 
-        //printf("CreateClienteWos\n\n");
         //printf("[NFI_TCP_SERVER] CREATE WOS - %s\n", msg.u_st_tcp_server_msg.op_creat.path);
 
         nfi_tcp_server_doRequest(server_aux, & msg, (char * ) & (fh_aux -> fd), sizeof(int));
@@ -1032,7 +1028,6 @@ int nfi_tcp_server_create(struct nfi_server * serv, char * url, struct nfi_attr 
         return -1;
     }
     
-
     DEBUG_END();
 
     return 0;

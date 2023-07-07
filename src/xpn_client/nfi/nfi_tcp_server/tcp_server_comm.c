@@ -134,7 +134,6 @@ int connection ( tcpClient_param_st * params )
         debug_warning("Server[?]: doConnection fails");
         return -1;
     }
-
     return ret;
 }
 
@@ -160,7 +159,6 @@ int doDisconnection ( tcpClient_param_st * params )
     }
 
     params -> server = -1;
-
     return ret;
 }
 
@@ -357,7 +355,7 @@ ssize_t tcpClient_write_data ( int fd, char * data, ssize_t size, __attribute__(
         if (ret < 0) {
             //printf("[NFI_TCP_COMM] client: write_data(%d): %lu = %d ID=%s --th:%d--\n", fd, (unsigned long) size, ret, msg_id, (int) pthread_self());
 
-            perror("tcpClient_write_data: ERROR on real_write: ");
+            debug_info("tcpClient_write_data: ERROR on real_write: ");
             return ret ;
 	   }
 
@@ -424,7 +422,7 @@ ssize_t tcpClient_read_data ( int fd, char * data, ssize_t size, __attribute__((
 
         if (ret < 0) 
         {
-            perror("tcpClient_read_data: ERROR on real_read");
+            debug_info("tcpClient_read_data: ERROR on real_read");
             return ret ;
         }
 
