@@ -151,10 +151,11 @@ Read the operation to realize
 int tcp_server_do_operation(struct st_th * th, int * the_end)
 {
     DEBUG_BEGIN();
+
     int ret;
     struct st_tcp_server_msg head;
 
-    //printf("SERVER START OPERATION -- %d\n", th -> type_op);
+    //printf("SERVER DO OPERATION -- %d\n", th -> type_op);
 
     switch (th -> type_op)
     {
@@ -274,43 +275,37 @@ int tcp_server_do_operation(struct st_th * th, int * the_end)
 
 		//File system API
 	    case TCP_SERVER_PRELOAD_FILE:
-    		ret = tcp_server_comm_read_data(th -> params, (int) th -> sd, (char * ) & (head.u_st_tcp_server_msg.op_preload), sizeof(struct st_tcp_server_preload), 0 /*head.id*/);
-    		if (ret != -1) {
-    		    tcp_server_op_preload(th -> params, (int) th -> sd, & head, 0 /*head.id*/);
-    		}
-    		break;
+		ret = tcp_server_comm_read_data(th -> params, (int) th -> sd, (char * ) & (head.u_st_tcp_server_msg.op_preload), sizeof(struct st_tcp_server_preload), 0 /*head.id*/);
+		if (ret != -1) {
+		    tcp_server_op_preload(th -> params, (int) th -> sd, & head, 0 /*head.id*/);
+		}
+		break;
 	    case TCP_SERVER_FLUSH_FILE:
-    		ret = tcp_server_comm_read_data(th -> params, (int) th -> sd, (char * ) & (head.u_st_tcp_server_msg.op_flush), sizeof(struct st_tcp_server_flush), 0 /*head.id*/);
-    		if (ret != -1) {
-    		    tcp_server_op_flush(th -> params, (int) th -> sd, & head, 0 /*head.id*/);
-    		}
-    		break;
+		ret = tcp_server_comm_read_data(th -> params, (int) th -> sd, (char * ) & (head.u_st_tcp_server_msg.op_flush), sizeof(struct st_tcp_server_flush), 0 /*head.id*/);
+		if (ret != -1) {
+		    tcp_server_op_flush(th -> params, (int) th -> sd, & head, 0 /*head.id*/);
+		}
+		break;
 
 		//Connection API
 	    case TCP_SERVER_DISCONNECT:
-		  break;
+		break;
 
 	    case TCP_SERVER_FINALIZE:
-    		*
-    		the_end = 1;
-    		break;
+		*
+		the_end = 1;
+		break;
 
 		//FS Metadata API
 	    case TCP_SERVER_GETNODENAME:
-            tcp_server_op_getnodename(th -> params, (int) th -> sd, & head, 0 /*head.id*/); //NEW
-            ret = 0;
-            break;
+		tcp_server_op_getnodename(th -> params, (int) th -> sd, & head, 0 /*head.id*/); //NEW
+		break;
 
-        default:
-            ret = -1;
-            printf("Operation not recognized\n\n");
-            tcp_server_comm_write_data(th -> params, (int) th -> sd, (char * ) & ret, sizeof(int), 0);
     }
 
     DEBUG_END();
-    //printf("SERVER STOP OPERATION -- %d -- ret - %d\n\n", th -> type_op, ret);
-    /*TO-DO: Habria que tratar arriba el caso de error*/
-    return ret;
+
+    return 0;
 }
 
 //
@@ -462,7 +457,6 @@ void tcp_server_op_creat_ws(tcp_server_param_st * params, int sd, struct st_tcp_
 
 void tcp_server_op_creat_wos(tcp_server_param_st * params, int sd, struct st_tcp_server_msg * head, int rank_client_id)
 {
-    //printf("Entra CreateWOS\n\n");
     int fd;
     char *extra = "/#";
     char *s;
@@ -528,7 +522,7 @@ void tcp_server_op_creat_wos(tcp_server_param_st * params, int sd, struct st_tcp
 
 
     filesystem_close(fd);
-    //printf("Sale CreateWOS\n\n");
+
     // show debug info
     debug_info("[%d][TCP-SERVER-OPS] (ID=%s) CREAT(%s)=%d\n", __LINE__, params -> srv_name, s, fd);
 }
@@ -743,7 +737,6 @@ void tcp_server_op_write_ws(tcp_server_param_st * params, int sd, struct st_tcp_
 
 void tcp_server_op_write_wos(tcp_server_param_st * params, int sd, struct st_tcp_server_msg * head, int rank_client_id)
 {
-    //printf("Entra WriteWOS\n\n");
     if( params -> mosquitto_mode == 0 )
     {
         struct st_tcp_server_write_req req;
@@ -767,7 +760,6 @@ void tcp_server_op_write_wos(tcp_server_param_st * params, int sd, struct st_tcp
         {
             req.size = -1; // TODO: check in client that -1 is treated properly... :-)
             tcp_server_comm_write_data(params, sd, (char * ) & req, sizeof(struct st_tcp_server_write_req), rank_client_id);
-            //printf("Sale WriteWOS\n\n");
             return;
         }
 
@@ -777,7 +769,6 @@ void tcp_server_op_write_wos(tcp_server_param_st * params, int sd, struct st_tcp
             req.size = -1; // TODO: check in client that -1 is treated properly... :-)
             tcp_server_comm_write_data(params, sd, (char * ) & req, sizeof(struct st_tcp_server_write_req), rank_client_id);
             filesystem_close(fd);
-            //printf("Sale WriteWOS\n\n");
             return;
         }
 
@@ -811,11 +802,7 @@ void tcp_server_op_write_wos(tcp_server_param_st * params, int sd, struct st_tcp
         filesystem_close(fd);
         FREE_AND_NULL(buffer);
     }
-    else
-    {
-        printf ("Mosquitto_mode == 1\n\n");
-    }
-    //printf("Sale WriteWOS\n\n");
+
     // for debugging purpouses
     debug_info("[TCP-SERVER-OPS] (ID=%s) end write: fd %d ID=xn", params -> srv_name, head -> u_st_tcp_server_msg.op_write.fd);
 }

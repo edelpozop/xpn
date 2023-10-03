@@ -20,10 +20,8 @@
 
   /* ... Include / Inclusion ........................................... */
 
-#include "tcp_server_comm.h"
+     #include "tcp_server_comm.h"
 
-#define MAX_RETRIES 5
-#define RETRY_DELAY_MS 1000
 
   /* ... Functions / Funciones ......................................... */
 
@@ -134,6 +132,7 @@ int connection ( tcpClient_param_st * params )
         debug_warning("Server[?]: doConnection fails");
         return -1;
     }
+
     return ret;
 }
 
@@ -159,6 +158,7 @@ int doDisconnection ( tcpClient_param_st * params )
     }
 
     params -> server = -1;
+
     return ret;
 }
 
@@ -335,27 +335,14 @@ ssize_t tcpClient_write_data ( int fd, char * data, ssize_t size, __attribute__(
     cont = 0 ;
     do
     {
-        int retries = 0;
-
-        while (retries < MAX_RETRIES)
-        {
-            ret = real_write(fd, data + cont, size - cont);
-            if (ret >= 0) 
-            {
-                break;
-            }
-            retries++;
-            usleep(RETRY_DELAY_MS);
-        }
-
-        
+        ret = real_write(fd, data + cont, size - cont);
 
         debug_info("[NFI_TCP_COMM] client: write_data(%d): %lu = %d ID=%s --th:%d--\n", fd, (unsigned long) size, ret, msg_id, (int) pthread_self());
 
         if (ret < 0) {
             //printf("[NFI_TCP_COMM] client: write_data(%d): %lu = %d ID=%s --th:%d--\n", fd, (unsigned long) size, ret, msg_id, (int) pthread_self());
 
-            debug_info("tcpClient_write_data: ERROR on real_write: ");
+            perror("tcpClient_write_data: ERROR on real_write: ");
             return ret ;
 	   }
 
@@ -404,26 +391,13 @@ ssize_t tcpClient_read_data ( int fd, char * data, ssize_t size, __attribute__((
     cont = 0;
     do
     {
-        //printf("real_read_server - fd: %d\tdata: %d\tcont: %d\tsize: %d\n", fd, data, cont, size);
-        int retries = 0;
-
-        while (retries < MAX_RETRIES)
-        {
-            ret = real_read(fd, data + cont, size - cont);
-            if (ret >= 0) 
-            {
-                break;
-            }
-            retries++;
-            usleep(RETRY_DELAY_MS);
-        }
+        ret = real_read(fd, data + cont, size - cont);
 
         debug_info("[NFI_TCP_COMM] client: read_data(%d): %lu = %d ID=%s --th:%d--\n", fd, (unsigned long) size, ret, msg_id, (int) pthread_self());
 
-        if (ret < 0) 
-        {
-            debug_info("tcpClient_read_data: ERROR on real_read");
-            return ret ;
+        if (ret < 0) {
+            perror("tcpClient_read_data: ERROR on real_read: ");
+	    return ret ;
         }
 
         cont += ret;

@@ -29,23 +29,28 @@
 #include "tcp_server/tcp_server_comm.h"
 #include "tcp_server/tcp_server_d2xpn.h"
 #include <signal.h>
+
 #include <pthread.h>
 
 /* ... Global variables / Variables globales ......................... */
 
 tcp_server_param_st params;
 worker_t worker;
-int the_end = 0, waitingThreads = 0, copied = 0;
+int the_end = 0;
 char serv_name[HOST_NAME_MAX];
-pthread_mutex_t mutex_1;
-pthread_cond_t cond_cp;
 
 #define MAX_LINE_LENGTH 256
 #define QUEUE_SIZE 2000
 
 typedef struct 
 {
-    int bufSd[QUEUE_SIZE];
+    int socket;
+    // Otros datos del cliente que se deseen procesar
+} ClientData;
+
+typedef struct 
+{
+    ClientData* queue[QUEUE_SIZE];
     int front;
     int rear;
     int count;
@@ -71,10 +76,11 @@ void queue_init()
     pthread_mutex_init(&queue.mutex, NULL);
     pthread_cond_init(&queue.not_empty, NULL);
     pthread_cond_init(&queue.not_full, NULL);
+    //pthread_cond_init(&queue.idle, NULL);
 }
 
 
-void enqueue(int sd) 
+void enqueue(ClientData* client) 
 {
     pthread_mutex_lock(&queue.mutex);
     while (queue.count >= QUEUE_SIZE) 
@@ -83,40 +89,38 @@ void enqueue(int sd)
     }
 
     queue.rear = (queue.rear + 1) % QUEUE_SIZE;
-    queue.bufSd[queue.rear] = sd;
+    queue.queue[queue.rear] = client;
     queue.count++;
-
-    //printf("ServName - %s\tElementos enqueue - %d\n\n", serv_name, queue.count);
 
     pthread_cond_signal(&queue.not_empty);
     pthread_mutex_unlock(&queue.mutex);
 }
 
 
-int dequeue() 
+ClientData* dequeue() 
 {
     pthread_mutex_lock(&queue.mutex);
 
     while (queue.count <= 0) 
     {
-        waitingThreads++;
         // Dormir hasta que haya elementos en la cola
         pthread_cond_wait(&queue.not_empty, &queue.mutex);
-        waitingThreads--;
     }
 
-    int client = queue.bufSd[queue.front];
-    queue.bufSd[queue.front] = -1;
+    ClientData* client = queue.queue[queue.front];
     queue.front = (queue.front + 1) % QUEUE_SIZE;
     queue.count--;
-    //printf("ServName - %s\tElementos dequeue - %d\tHilos Esperando - %d\n\n", serv_name, queue.count, waitingThreads);
 
     // Despertar a un hilo dormido si la cola aún tiene elementos
     /*if (queue.count > 0) 
     {
         pthread_cond_signal(&queue.not_empty);
+    } 
+    else 
+    {
+        // No hay más elementos en la cola, señalizar que todos los hilos están inactivos
+        pthread_cond_broadcast(&queue.idle);
     }*/
-
     pthread_cond_signal(&queue.not_full);
     pthread_mutex_unlock(&queue.mutex);
 
@@ -150,7 +154,7 @@ void tcp_server_run(struct st_th th)
 void tcp_server_dispatcher(struct st_th th)
 {
     int ret;
-    //int disconnect;
+    int disconnect;
     struct st_th th_arg;
 
     //printf("Arrived tcp_server dispatcher\n");
@@ -164,58 +168,47 @@ void tcp_server_dispatcher(struct st_th th)
 
     int data = 0;
 
-    debug_info("pre tcp_server_comm_write_data - %d\n\n", __LINE__);
-
     ret = tcp_server_comm_write_data(th.params, (int) th.sd, (char * ) &data, sizeof(int), 0);
-
-    debug_info("post tcp_server_comm_write_data - %d\n\n", __LINE__);
-
     if (ret < 0)
     {
         printf("[TCP-SERVER] ERROR: sync write fails\n");
-        return;
+        return -1;
     }
 
     //printf("[TCP-SERVER] OK: sync write\n");
 
-    //disconnect = 0;
-    //while (!disconnect)
-    //{
-    //printf("pre tcp_server_comm_read_operation - %d\n\n", __LINE__);
-
-    ret = tcp_server_comm_read_operation(th.params, (int) th.sd, (char * ) & (th.type_op), 1, & (th.rank_client_id));
-
-    //printf("post tcp_server_comm_read_operation - %d\n\n", __LINE__);
-
-    if (ret < 0) 
+    disconnect = 0;
+    while (!disconnect)
     {
-        debug_info("[TCP-SERVER] ERROR: tcp_server_comm_readdata fail\n");
-        return;
+        ret = tcp_server_comm_read_operation(th.params, (int) th.sd, (char * ) & (th.type_op), 1, & (th.rank_client_id));
+
+        if (ret < 0) {
+            //printf("[TCP-SERVER] ERROR: tcp_server_comm_readdata fail\n");
+            return;
+        }
+
+        if (ret == 0) {
+            //printf("[TCP-SERVER] WARNING: tcp_server_comm_readdata broken pipe\n");
+            return;
+        }
+
+        if (th.type_op == TCP_SERVER_DISCONNECT || th.type_op == TCP_SERVER_FINALIZE)
+        {
+            printf("[TCP-SERVER] INFO: DISCONNECT received\n");
+            disconnect = 1;
+            continue;
+        }
+
+        // Launch worker per operation
+        th_arg.params         = & params;
+        th_arg.sd             = (int) th.sd;
+        th_arg.function       = tcp_server_run;
+        th_arg.type_op        = th.type_op;
+        th_arg.rank_client_id = th.rank_client_id;
+        th_arg.wait4me        = FALSE;
+
+        tcp_server_run(th_arg) ;
     }
-
-    if (ret == 0) 
-    {
-        debug_info("[TCP-SERVER] WARNING: tcp_server_comm_readdata broken pipe\n");
-        return;
-    }
-
-    if (th.type_op == TCP_SERVER_DISCONNECT || th.type_op == TCP_SERVER_FINALIZE)
-    {
-        printf("[TCP-SERVER] INFO: DISCONNECT received\n");
-        //disconnect = 1;
-        return;
-    }
-
-    // Launch worker per operation
-    th_arg.params         = & params;
-    th_arg.sd             = (int) th.sd;
-    th_arg.function       = tcp_server_run;
-    th_arg.type_op        = th.type_op;
-    th_arg.rank_client_id = th.rank_client_id;
-    th_arg.wait4me        = FALSE;
-
-    tcp_server_run(th_arg) ;
-    //}
 
     debug_info("[TCP-SERVER] tcp_server_worker_run (ID=%d) close\n", th.rank_client_id);
 
@@ -226,57 +219,48 @@ void tcp_server_dispatcher(struct st_th th)
 
 void* process_client(void* arg) 
 {
-    pthread_mutex_lock(&mutex_1) ;
-    copied = 1 ;
-    pthread_cond_signal(&cond_cp) ;
-    pthread_mutex_unlock(&mutex_1) ;
-
     struct st_tcp_server_msg head;
     int rank_client_id, ret;
     struct st_th th_arg;
 
-    /*Cambiar while 1 a while the_end*/
     while (1) 
     {
         char bufferSock[MAX_LINE_LENGTH];
         ssize_t bytes_received;
 
-        int client = dequeue();
+        ClientData* client = dequeue();
 
-        ret = tcp_server_comm_read_operation( & params, client, (char * ) & (head.type), 1, & (rank_client_id) );
+        ret = tcp_server_comm_read_operation( & params, client -> socket, (char * ) & (head.type), 1, & (rank_client_id) );
         //printf("SERVER 1 -- %d\n", head.type);
 
         if (ret < 0) 
         {
-            debug_info("[TCP-SERVER] ERROR: tcp_server_comm_readdata fail\n");
-            continue;
+            printf("[TCP-SERVER] ERROR: tcp_server_comm_readdata fail\n");
+            return -1;
         }
 
         if (head.type == TCP_SERVER_FINALIZE) 
         {
             the_end = 1;
-            debug_info("[TCP-SERVER]: tcp_server finalized\n");
+            printf("[TCP-SERVER]: tcp_server finalized\n");
             continue;
         }
 
         //Launch dispatcher per application
         th_arg.params = & params;
-        th_arg.sd = client;
+        th_arg.sd = client -> socket;
         th_arg.function = tcp_server_dispatcher;
         th_arg.type_op = 0;
         th_arg.rank_client_id = 0;
         th_arg.wait4me = FALSE;
 
-        debug_info("Thread pre-dispatcher\n\n");
-
         tcp_server_dispatcher( th_arg );
-
-        debug_info("Thread post-dispatcher\n\n");
 
         //workers_launch( & worker, & th_arg, tcp_server_dispatcher);
 
         // Finalizar la conexión con el cliente y liberar memoria
-        //close(client);
+        close(client->socket);
+        free(client);
     }
 
     pthread_exit(NULL);
@@ -300,13 +284,9 @@ int tcp_server_up(void)
     sem_t * sem_server ;
     int sd;
     //int nthreads = sysconf(_SC_NPROCESSORS_ONLN);
-    int nthreads = 64;
+    int nthreads = 128;
     printf("NUMERO DE HILOS ------------------ %d\n", nthreads);
     pthread_t threads[nthreads];
-
-    pthread_mutex_init(&mutex_1, NULL) ;
-    pthread_cond_init(&cond_cp, NULL) ;
-
     queue_init();
 
     // Feedback
@@ -349,15 +329,7 @@ int tcp_server_up(void)
     // Crear el grupo de hilos (thread pool)
     for (int i = 0; i < nthreads; i++) 
     {
-        copied = 0;
         pthread_create(&threads[i], NULL, process_client, &i);
-
-        pthread_mutex_lock(&mutex_1) ;
-        while (0 == copied) 
-        {
-            pthread_cond_wait(&cond_cp, &mutex_1) ;
-        }
-        pthread_mutex_unlock(&mutex_1) ;
     }
 
     // Loop: receiving + processing
@@ -371,9 +343,12 @@ int tcp_server_up(void)
         if (sd < 0) {
             continue;
         }
+        // Crear la estructura de datos del cliente
+        ClientData* client = (ClientData*)malloc(sizeof(ClientData));
+        client->socket = sd;
 
         // Encolar el socket
-        enqueue(sd);
+        enqueue(client);
     }
 
     // Wait and finalize for all current workers

@@ -37,12 +37,12 @@ int main ( int argc, char *argv[] )
 	// test 1
 
 	//fd = open ("./hola.txt", O_RDONLY);
-
+	sleep(1);
 	t_bc = get_time();
 
-	//fd1 = xpn_creat("/P1/test_1", 00777);
-	fd1 = xpn_creat(argv[2], 00777);
-	printf("%d = xpn_creat('%s', %o)\n", ret, argv[2], 00777);
+	fd1 = xpn_creat("/P1/test_1", 00777);
+	//fd1 = xpn_creat(argv[2], 00777);
+	printf("%d = xpn_creat('%s', %o)\n", ret, "/P1/test_1", 00777);
 
 	memset(buffer, 'a', BUFF_SIZE) ;
 	printf("memset(buffer, 'a', %d)\n", BUFF_SIZE) ;
@@ -61,7 +61,7 @@ int main ( int argc, char *argv[] )
 
 	t_bw = get_time();
 
-	for (int i = 0; i < atoi(argv[1]); i++)
+	for (int i = 0; i < 500; i++)
 	{
 		ret = xpn_write(fd1, buffer, BUFF_SIZE);
 		//printf("%d = xpn_write_%d(%d, %p, %lu)\n", ret, i, fd1, buffer, (unsigned long)BUFF_SIZE);
@@ -76,7 +76,7 @@ int main ( int argc, char *argv[] )
 
 	printf("%d = xpn_close(%d)\n", ret, fd1) ;
 
-	printf("Prueba: %d (128B), Tiempo Total: %fms; Tiempo Escritura: %f ms\n", atoi(argv[1]), t_ac * 1000, t_aw * 1000);
+	printf("Prueba: %d (128B), Tiempo Total: %fms; Tiempo Escritura: %f ms\n", 500, t_ac * 1000, t_aw * 1000);
 
 		// xpn-destroy
 	printf("xpn_destroy()\n");
