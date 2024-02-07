@@ -871,7 +871,7 @@ int nfi_tcp_server_create(struct nfi_server * serv, char * url, struct nfi_attr 
         memccpy(msg.id, server_aux -> id, 0, TCP_SERVER_ID - 1);
         memccpy(msg.u_st_tcp_server_msg.op_creat.path, dir, 0, PATH_MAX - 1);
 
-        printf("CreateClienteWos\n\n");
+        //printf("CreateClienteWos\n\n");
         //printf("[NFI_TCP_SERVER] CREATE WOS - %s\n", msg.u_st_tcp_server_msg.op_creat.path);
 
         nfi_tcp_server_doRequest(server_aux, & msg, (char * ) & (fh_aux -> fd), sizeof(int));
@@ -1168,7 +1168,7 @@ ssize_t nfi_tcp_server_write(struct nfi_server * serv, struct nfi_fhandle * fh, 
             debug_info("[NFI-TCP] write: -> offset %d \n", (int) msg.u_st_tcp_server_msg.op_write.offset);
             debug_info("[NFI-TCP] write: -> size   %d \n", msg.u_st_tcp_server_msg.op_write.size);
 
-            printf("EscrituraClienteWos\n\n");
+            //printf("EscrituraClienteWos\n\n");
 
             ret = tcp_server_write_operation(server_aux -> params.server, & msg);
             if (ret < 0) 
@@ -1455,15 +1455,7 @@ int nfi_tcp_server_rename(struct nfi_server * serv, char * old_url, char * new_u
     struct nfi_tcp_server_server * server_aux;
     struct st_tcp_server_msg msg;
 
-    DEBUG_BEGIN();
-
-    ret = doConnection( & (server_aux -> params) );
-    if (ret < 0) 
-    {
-        fprintf(stderr, "ERROR: nfi_tcp_server_rename: Connection failed\n");
-        return -1;
-    }
-    
+    DEBUG_BEGIN();    
 
     // Check arguments...
     NULL_RET_ERR(serv, TCP_SERVERERR_PARAM);
@@ -1478,6 +1470,13 @@ int nfi_tcp_server_rename(struct nfi_server * serv, char * old_url, char * new_u
     if (server_aux == NULL) 
     {
         tcp_server_err(TCP_SERVERERR_PARAM);
+        return -1;
+    }
+
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_rename: Connection failed\n");
         return -1;
     }
 
@@ -1545,14 +1544,6 @@ int nfi_tcp_server_getattr(struct nfi_server * serv, struct nfi_fhandle * fh, st
 
     DEBUG_BEGIN();
 
-    ret = doConnection( & (server_aux -> params) );
-    if (ret < 0) 
-    {
-        fprintf(stderr, "ERROR: nfi_tcp_server_getattr: Connection failed\n");
-        return -1;
-    }
-    
-
     // check arguments...
     NULL_RET_ERR(serv, TCP_SERVERERR_PARAM);
     NULL_RET_ERR(fh, TCP_SERVERERR_PARAM);
@@ -1562,7 +1553,19 @@ int nfi_tcp_server_getattr(struct nfi_server * serv, struct nfi_fhandle * fh, st
 
     // copy private information...
     //fh_aux     = (struct nfi_tcp_server_fhandle *) fh->priv_fh; //TODO: fstat
+    //server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
+
+    // private_info...
     server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
+    debug_info("[NFI-TCP] nfi_tcp_server_write(ID=%s): begin off %d size %d\n", server_aux -> id, (int) offset, (int) size);
+    //fh_aux = (struct nfi_tcp_server_fhandle * ) fh -> priv_fh;
+
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_getattr: Connection failed\n");
+        return -1;
+    }
 
     ret = ParseURL(fh -> url, NULL, NULL, NULL, server, NULL, dir);
     if (ret < 0) {
@@ -1648,14 +1651,6 @@ int nfi_tcp_server_mkdir(struct nfi_server * serv, char * url, struct nfi_attr *
 
     DEBUG_BEGIN();
 
-    ret = doConnection( & (server_aux -> params) );
-    if (ret < 0) 
-    {
-        fprintf(stderr, "ERROR: nfi_tcp_server_mkdir: Connection failed\n");
-        return -1;
-    }
-    
-
     // Check arguments...
     NULL_RET_ERR(serv, TCP_SERVERERR_PARAM);
     NULL_RET_ERR(attr, TCP_SERVERERR_PARAM);
@@ -1664,6 +1659,13 @@ int nfi_tcp_server_mkdir(struct nfi_server * serv, char * url, struct nfi_attr *
 
     // private_info...
     server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
+
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_mkdir: Connection failed\n");
+        return -1;
+    }
 
     ret = ParseURL(url, NULL, NULL, NULL, server, NULL, dir);
     if (ret < 0) 
@@ -1757,15 +1759,7 @@ int nfi_tcp_server_opendir(struct nfi_server * serv, char * url, struct nfi_fhan
     struct nfi_tcp_server_fhandle * fh_aux;
     struct st_tcp_server_msg msg;
 
-    DEBUG_BEGIN();
-
-    ret = doConnection( & (server_aux -> params) );
-    if (ret < 0) 
-    {
-        fprintf(stderr, "ERROR: nfi_tcp_server_opendir: Connection failed\n");
-        return -1;
-    }
-    
+    DEBUG_BEGIN();    
 
     // Check arguments...
     NULL_RET_ERR(serv, TCP_SERVERERR_PARAM);
@@ -1773,6 +1767,16 @@ int nfi_tcp_server_opendir(struct nfi_server * serv, char * url, struct nfi_fhan
     NULL_RET_ERR(fho, TCP_SERVERERR_PARAM);
     nfi_tcp_server_keepConnected(serv);
     NULL_RET_ERR(serv -> private_info, TCP_SERVERERR_PARAM);
+
+    // private_info...
+    server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
+
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_opendir: Connection failed\n");
+        return -1;
+    }
 
     // private_info...
     ret = ParseURL(url, NULL, NULL, NULL, server, NULL, dir);
@@ -1850,14 +1854,6 @@ int nfi_tcp_server_readdir(struct nfi_server * serv, struct nfi_fhandle * fh, st
 
     DEBUG_BEGIN();
 
-    ret = doConnection( & (server_aux -> params) );
-    if (ret < 0) 
-    {
-        fprintf(stderr, "ERROR: nfi_tcp_server_readdir: Connection failed\n");
-        return -1;
-    }
-    
-
     // Check arguments...
     NULL_RET_ERR(serv, TCP_SERVERERR_PARAM);
     NULL_RET_ERR(fh, TCP_SERVERERR_PARAM);
@@ -1875,6 +1871,14 @@ int nfi_tcp_server_readdir(struct nfi_server * serv, struct nfi_fhandle * fh, st
     // private_info...
     server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
     fh_aux = (struct nfi_tcp_server_fhandle * ) fh -> priv_fh;
+
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_readdir: Connection failed\n");
+        return -1;
+    }
+    
 
     // clean all entry content
     memset(entry, 0, sizeof(struct dirent));
@@ -1930,13 +1934,6 @@ int nfi_tcp_server_closedir(struct nfi_server * serv, struct nfi_fhandle * fh)
     struct nfi_tcp_server_fhandle * fh_aux;
 
     DEBUG_BEGIN();
-
-    ret = doConnection( & (server_aux -> params) );
-    if (ret < 0) 
-    {
-        fprintf(stderr, "ERROR: nfi_tcp_server_closedir: Connection failed\n");
-        return -1;
-    }
     
 
     // Check arguments...
@@ -1951,6 +1948,13 @@ int nfi_tcp_server_closedir(struct nfi_server * serv, struct nfi_fhandle * fh)
         // private_info...
         server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
         fh_aux = (struct nfi_tcp_server_fhandle * ) fh -> priv_fh;
+
+        ret = doConnection( & (server_aux -> params) );
+        if (ret < 0) 
+        {
+            fprintf(stderr, "ERROR: nfi_tcp_server_closedir: Connection failed\n");
+            return -1;
+        }
 
         /************** LOCAL *****************/
         if (server_aux -> params.locality) 
@@ -1969,17 +1973,18 @@ int nfi_tcp_server_closedir(struct nfi_server * serv, struct nfi_fhandle * fh)
 
         }
 
+        int ret2 = doDisconnection( & (server_aux -> params) );
+        if (ret2 < 0) 
+        {
+            fprintf(stderr, "ERROR: nfi_tcp_server_closedir: DisConnection failed\n");
+            return -1;
+        }
+
         // free memory
         FREE_AND_NULL(fh -> priv_fh);
     }
 
-    int ret2 = doDisconnection( & (server_aux -> params) );
-    if (ret2 < 0) 
-    {
-        fprintf(stderr, "ERROR: nfi_tcp_server_closedir: DisConnection failed\n");
-        return -1;
-    }
-    
+
 
     DEBUG_END();
 
@@ -1997,13 +2002,6 @@ int nfi_tcp_server_rmdir(struct nfi_server * serv, char * url)
 
     DEBUG_BEGIN();
 
-    ret = doConnection( & (server_aux -> params) );
-    if (ret < 0) 
-    {
-        fprintf(stderr, "ERROR: nfi_tcp_server_rmdir: Connection failed\n");
-        return -1;
-    }
-    
 
     // Check arguments...
     NULL_RET_ERR(serv, TCP_SERVERERR_PARAM);
@@ -2013,6 +2011,13 @@ int nfi_tcp_server_rmdir(struct nfi_server * serv, char * url)
 
     // private_info...
     server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
+
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_rmdir: Connection failed\n");
+        return -1;
+    }
 
     ret = ParseURL(url, NULL, NULL, NULL, server, NULL, dir);
     if (ret < 0) 
@@ -2126,6 +2131,14 @@ int nfi_tcp_server_preload(struct nfi_server * serv, char * url, char * virtual_
     }
 
     server_aux = (struct nfi_tcp_server_server * ) serv -> private_info;
+
+    ret = doConnection( & (server_aux -> params) );
+    if (ret < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_rmdir: Connection failed\n");
+        return -1;
+    }
+
     debug_info("[NFI-TCP] nfi_tcp_server_preload(ID=%s): preload %s in server %s.\n", server_aux -> id, virtual_path, serv -> server);
 
     /*****************************************/
@@ -2141,9 +2154,16 @@ int nfi_tcp_server_preload(struct nfi_server * serv, char * url, char * virtual_
 
     debug_info("[NFI-TCP] nfi_tcp_server_preload(ID=%s): end %s - %s = %d\n", server_aux -> id, virtual_path, storage_path, ret);
 
+    int ret2 = doDisconnection( & (server_aux -> params) );
+    if (ret2 < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_rmdir: DisConnection failed\n");
+        return -1;
+    }
+
     DEBUG_END();
 
-    return ret;
+    return ret2;
 }
 
 
@@ -2189,6 +2209,14 @@ int nfi_tcp_server_flush(struct nfi_server * serv, char * url, char * virtual_pa
 
     nfi_tcp_server_doRequest(server_aux, & msg, (char * ) & ret, sizeof(int));
     /*****************************************/
+
+    int ret2 = doDisconnection( & (server_aux -> params) );
+    if (ret2 < 0) 
+    {
+        fprintf(stderr, "ERROR: nfi_tcp_server_rmdir: DisConnection failed\n");
+        return -1;
+    }
+
 
     DEBUG_END();
 

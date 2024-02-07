@@ -67,12 +67,15 @@ fi
 
 
 ## MQTT
+echo $INSTALL_PATH
+SRC_MQTT=$HOME/dcamarma/xpn_ep/src/mosquitto
 echo " * MQTT: preparing directories..."
 rm -fr "$INSTALL_PATH/mosquitto"
 mkdir -p "$INSTALL_PATH/mosquitto/"
-sed -ibak "s/WITH_CJSON:=yes/WITH_CJSON:=no/g" $HOME/src/mosquitto/config.mk
-cd "$INSTALL_PATH/mosquitto/"
-cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH/mosquitto/ $HOME/src/mosquitto
+sed -ibak "s/WITH_CJSON:=yes/WITH_CJSON:=no/g" $SRC_MQTT/config.mk
+#cd "$INSTALL_PATH/mosquitto/"
+cd $SRC_MQTT
+cmake -DCMAKE_INSTALL_PREFIX=$HOME/dcamarma/xpn_ep/bin/mosquitto/ -DDOCUMENTATION=OFF .
 
 echo " * MQTT: compiling and installing..."
 pushd .

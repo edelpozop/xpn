@@ -44,7 +44,7 @@ int py_open ( char *name, char *flags )
 	    flags_c = flags_c | O_RDWR ;
 
 	ret = open(name, flags_c, S_IRWXU) ;
-	printf("%d = xpn_open(name:'%s', flags:%d, mode:%d)\n", ret, name, flags_c, S_IRWXU) ;
+	//printf("%d = xpn_open(name:'%s', flags:%d, mode:%d)\n", ret, name, flags_c, S_IRWXU) ;
 
 	return ret ;
 }
@@ -54,7 +54,7 @@ int py_write ( int fd, char *buffer, int buffer_size )
 	int ret ;
 
 	ret = write(fd, buffer, buffer_size) ;
-	printf("%d = xpn_write(fd:%d, buffer:'%.10s...', buffer_size:%d)\n", ret, fd, buffer, buffer_size) ;
+	//printf("%d = xpn_write(fd:%d, buffer:'%.10s...', buffer_size:%d)\n", ret, fd, buffer, buffer_size) ;
 
 	return ret ;
 }
@@ -73,7 +73,7 @@ char * py_read ( int fd )
 
 	if (buffer != NULL) {
 	    ret = read(fd, buffer, st.st_size) ;
-	    printf("%d = xpn_read(fd:%d, buffer:'%.10s...', buffer_size:%d)\n", ret, fd, buffer, 1024) ;
+	    //printf("%d = xpn_read(fd:%d, buffer:'%.10s...', buffer_size:%d)\n", ret, fd, buffer, 1024) ;
 	}
 
 	return buffer ;
@@ -84,7 +84,7 @@ int py_close ( int fd )
 	int ret ;
 
 	ret = close(fd) ;
-	printf("xpn_close(fd: %d)\n", fd) ;
+	//printf("xpn_close(fd: %d)\n", fd) ;
 
 	return ret ;
 }

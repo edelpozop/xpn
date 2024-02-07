@@ -35,13 +35,13 @@ void XpnShowFileTable(void)
 {
     int i = 0;
 
-    printf("<file_table %d>\n", XPN_MAX_FILE);
+    //printf("<file_table %d>\n", XPN_MAX_FILE);
     while ((i < XPN_MAX_FILE) && (xpn_file_table[i] != NULL) && (xpn_file_table[i] -> path != NULL)) 
     {
         printf(" * i:%d -- path:%s\n", i, xpn_file_table[i] -> path);
         i++;
     }
-    printf("</file_table>\n");
+    //printf("</file_table>\n");
 }
 
 

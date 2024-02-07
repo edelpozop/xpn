@@ -23,6 +23,9 @@
 #include "tcp_server_ops.h"
 
 
+/* GLOBAL VARIABLES */
+
+
 /* ... Functions / Funciones ......................................... */
 
 char * tcp_server_op2string(int op_code) {
@@ -497,12 +500,13 @@ void tcp_server_op_creat_wos(tcp_server_param_st * params, int sd, struct st_tcp
     {
 
         // do creat
-        fd = filesystem_creat(s, 0770); // TODO: tcp_server_op_creat don't use 'mode' from client ?
-
+	fd = filesystem_creat(s, 0770); // TODO: tcp_server_op_creat don't use 'mode' from client ?
+	//fd = filesystem_open(s, O_CREAT|O_APPEND);
         if (fd < 0) 
         {
             filesystem_mkpath(s);
             fd = filesystem_creat(s, 0770);
+		//fd = filesystem_open(s, O_CREAT|O_APPEND);
             //printf("TCP_SERVER_OPS CREATE NOTOK - %s - %d\n", s, fd);
             retries++;
         }
@@ -784,7 +788,39 @@ void tcp_server_op_write_wos(tcp_server_param_st * params, int sd, struct st_tcp
             filesystem_lseek(fd, head -> u_st_tcp_server_msg.op_write.offset + cont, SEEK_SET);
             //sem_wait(&disk_sem);
 
+            /********WRITES TIMES*********/
+            /*char copy_header[20];
+		    strncpy(copy_header, buffer, 20);
 
+		    if ((strstr(copy_header, "FIN") != NULL))
+		    {
+		        struct timeval current_time;
+		        gettimeofday(&current_time, NULL);
+		        time_t now = current_time.tv_sec;
+		        struct tm *timeinfo;
+		        timeinfo = localtime(&now);
+
+		        char time_str[20];
+		        strftime(time_str, sizeof(time_str), "%H:%M:%S", timeinfo);
+		        //int retw = write(file2, end_time, strlen(end_time));
+		        printf("ENDW - %s\n", time_str);
+		        //if (retw < 0) printf("ERROR Write Dispatcher\n");
+
+		//    close(file2);
+		    }
+		    else if ((strstr(copy_header, "INI") != NULL))
+		    {
+		        struct timeval current_time;
+		        gettimeofday(&current_time, NULL);
+		        time_t now = current_time.tv_sec;
+		        struct tm *timeinfo;
+		        timeinfo = localtime(&now);
+
+		        char time_str[20];
+		        strftime(time_str, sizeof(time_str), "%H:%M:%S", timeinfo);
+		        //int retw = write(file2, end_time, strlen(end_time));
+		        printf("STARTW - %s\n", time_str);
+		    }*/
             req.size = filesystem_write(fd, buffer, to_write);
 
             //sem_post(&disk_sem);
