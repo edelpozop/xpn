@@ -29,154 +29,222 @@
 
 // MOSQUITTO FILE
 #ifdef HAVE_MOSQUITTO_H
+#define QUEUE_MQ_SIZE 1000000
 
-struct ThreadData {
+typedef struct 
+{
     char * topic;
     char * msg;
-};
+}
+ThreadData;
 
 int file2 = -1;
 int opened = 0;
 int write_total = 0;
 //int its = 0;
 
-// Función que se ejecutara en el hilo
-void * process_message(void * data) 
+
+typedef struct 
 {
-    struct ThreadData * thread_data = (struct ThreadData *) data;
-/*
-    char copy_header[20];
-    strncpy(copy_header, thread_data->msg, 20);
+    ThreadData * queue[QUEUE_MQ_SIZE];
+    int front;
+    int rear;
+    int count;
+    pthread_mutex_t mutex;
+    pthread_cond_t not_empty;
+    pthread_cond_t not_full;
+}
+CircularQueueMQ;
 
-    if ((strstr(copy_header, "FIN") != NULL))
+CircularQueueMQ queue_mq;
+
+void queue_mq_init() 
+{
+    queue_mq.front = 0;
+    queue_mq.rear = -1;
+    queue_mq.count = 0;
+    pthread_mutex_init( & queue_mq.mutex, NULL);
+    pthread_cond_init( & queue_mq.not_empty, NULL);
+    pthread_cond_init( & queue_mq.not_full, NULL);
+}
+
+void enqueue_mq(ThreadData * client) 
+{
+    pthread_mutex_lock( &queue_mq.mutex );
+    while (queue_mq.count >= QUEUE_MQ_SIZE) 
     {
-        struct timeval current_time;
-        gettimeofday(&current_time, NULL);
-        time_t now = current_time.tv_sec;
-        struct tm *timeinfo;
-        timeinfo = localtime(&now);
-
-        char time_str[20];
-        strftime(time_str, sizeof(time_str), "%H:%M:%S", timeinfo);
-        //int retw = write(file2, end_time, strlen(end_time));
-        printf("ENDW - %s\n", time_str);
-        //if (retw < 0) printf("ERROR Write Dispatcher\n");
-
-//    close(file2);
+        pthread_cond_wait( & queue_mq.not_full, & queue_mq.mutex);
     }
-    else if ((strstr(copy_header, "INI") != NULL))
-    {
-        struct timeval current_time;
-        gettimeofday(&current_time, NULL);
-        time_t now = current_time.tv_sec;
-        struct tm *timeinfo;
-        timeinfo = localtime(&now);
 
-        char time_str[20];
-        strftime(time_str, sizeof(time_str), "%H:%M:%S", timeinfo);
-        //int retw = write(file2, end_time, strlen(end_time));
-        printf("STARTW - %s\n", time_str);
+    queue_mq.rear = (queue_mq.rear + 1) % QUEUE_MQ_SIZE;
+    queue_mq.queue[queue_mq.rear] = client;
+    queue_mq.count++;
+
+    pthread_cond_signal( & queue_mq.not_empty);
+    pthread_mutex_unlock( & queue_mq.mutex);
+}
+
+ThreadData * dequeue_mq() 
+{
+    pthread_mutex_lock( &queue_mq.mutex );
+
+    while (queue_mq.count <= 0) 
+    {
+        pthread_cond_wait( & queue_mq.not_empty, & queue_mq.mutex);
     }
-*/
-    // Copiar el mensaje en una variable local para manipularla
-    char topic[PATH_MAX], path[PATH_MAX];
 
-    int to_write1, offset;
+    ThreadData * client = queue_mq.queue[queue_mq.front];
+    queue_mq.front = (queue_mq.front + 1) % QUEUE_MQ_SIZE;
+    queue_mq.count--;
 
-    strncpy(topic, thread_data -> topic, PATH_MAX);
+  
+    pthread_cond_signal( & queue_mq.not_full);
+    pthread_mutex_unlock( & queue_mq.mutex);
 
-    // Encontrar la posición del último y el penúltimo slash
-    int last_slash = -1;
-    int penultimate_slash = -1;
-    for (int i = 0; topic[i] != '\0'; i++) 
+    return client;
+}
+
+// Función que se ejecutara en el hilo
+void * process_message(void * arg) 
+{
+    while(1)
     {
-        if (topic[i] == '/') {
-            penultimate_slash = last_slash;
-            last_slash = i;
+        ThreadData * thread_data = dequeue_mq();
+        //struct ThreadData * thread_data = (struct ThreadData *) data;
+
+        // Copiar el mensaje en una variable local para manipularla
+        char topic[PATH_MAX], path[PATH_MAX];
+
+        int to_write1, offset;
+
+        strncpy(topic, thread_data -> topic, PATH_MAX);
+
+        // Encontrar la posición del último y el penúltimo slash
+        int last_slash = -1;
+        int penultimate_slash = -1;
+        for (int i = 0; topic[i] != '\0'; i++) 
+        {
+            if (topic[i] == '/') 
+            {
+                penultimate_slash = last_slash;
+                last_slash = i;
+            }
         }
-    }
 
-    // Extraer el path y los dos enteros usando sscanf y las posiciones de los slashes
+        // Extraer el path y los dos enteros usando sscanf y las posiciones de los slashes
 
-    if (penultimate_slash >= 0 && last_slash > penultimate_slash) 
-    {
-        // Si hay dos slashes, extraer el path y ambos enteros
-        strncpy(path, topic, penultimate_slash);
-        path[penultimate_slash] = '\0';
-        sscanf( & topic[penultimate_slash + 1], "%d/%d", & to_write1, & offset);
+        if (penultimate_slash >= 0 && last_slash > penultimate_slash) 
+        {
+            // Si hay dos slashes, extraer el path y ambos enteros
+            strncpy(path, topic, penultimate_slash);
+            path[penultimate_slash] = '\0';
+            sscanf( & topic[penultimate_slash + 1], "%d/%d", & to_write1, & offset);
 
-    } else if (last_slash >= 0) 
-    {
-        // Si solo hay un slash, extraer solo el path y el primer entero
-        strncpy(path, topic, last_slash);
-        path[last_slash] = '\0';
-        sscanf( & topic[last_slash + 1], "%d", & to_write1);
-        offset = 0;
+        } 
+        else if (last_slash >= 0) 
+        {
+            // Si solo hay un slash, extraer solo el path y el primer entero
+            strncpy(path, topic, last_slash);
+            path[last_slash] = '\0';
+            sscanf( & topic[last_slash + 1], "%d", & to_write1);
+            offset = 0;
 
-    } else 
-    {
-        // Si no hay slashes, asumir que todo es el path
-        strncpy(path, topic, PATH_MAX - 1);
-        path[PATH_MAX - 1] = '\0';
-        to_write1 = 0;
-        offset = 0;
-    }
+        } 
+        else 
+        {
+            // Si no hay slashes, asumir que todo es el path
+            strncpy(path, topic, PATH_MAX - 1);
+            path[PATH_MAX - 1] = '\0';
+            to_write1 = 0;
+            offset = 0;
+        }
 
-    //printf("\n%s - %s %d %d\n", topic, path, to_write1, offset);
+        //printf("\n%s - %s %d %d\n", topic, path, to_write1, offset);
 
-    char * buffer = NULL;
-    int size, diff, cont = 0, to_write = 0, size_written = 0;
+        char * buffer = NULL;
+        int size, diff, cont = 0, to_write = 0, size_written = 0;
 
-    // initialize counters
-    size = to_write1;
-    if (size > MAX_BUFFER_SIZE) {
-        size = MAX_BUFFER_SIZE;
-    }
-    diff = size - cont;
+        // initialize counters
+        size = to_write1;
+        if (size > MAX_BUFFER_SIZE) 
+        {
+            size = MAX_BUFFER_SIZE;
+        }
+        diff = size - cont;
 
-    //Open file
-    int fd = open(path, O_WRONLY | O_APPEND);
-    if (fd < 0) {
-        return;
-    }
+        //Open file
+        int fd = open(path, O_WRONLY | O_APPEND);
+        if (fd < 0) 
+        {
+            return;
+        }
 
-    /*// malloc a buffer of size...
-    buffer = (char * ) malloc(size);
-    if (NULL == buffer)
-    {
+        /*// malloc a buffer of size...
+        buffer = (char * ) malloc(size);
+        if (NULL == buffer)
+        {
+            close(fd);
+            return;
+        }
+
+        bzero(buffer, MAX_BUFFER_SIZE);*/
+
+        char copy_header[20];
+        strncpy(copy_header, thread_data -> msg, 20);
+
+        if ((strstr(copy_header, "FIN") != NULL))
+        {
+            struct timeval current_time;
+            gettimeofday(&current_time, NULL);
+            time_t now = current_time.tv_sec;
+            struct tm *timeinfo;
+            timeinfo = localtime(&now);
+
+            char time_str[20];
+            strftime(time_str, sizeof(time_str), "%H:%M:%S", timeinfo);
+            printf("ENDW - %s\n", time_str);
+
+        }
+        else if ((strstr(copy_header, "INI") != NULL))
+        {
+            struct timeval current_time;
+            gettimeofday(&current_time, NULL);
+            time_t now = current_time.tv_sec;
+            struct tm *timeinfo;
+            timeinfo = localtime(&now);
+
+            char time_str[20];
+            strftime(time_str, sizeof(time_str), "%H:%M:%S", timeinfo);
+            printf("STARTW - %s\n", time_str);
+        }
+
+        // loop...
+        do 
+        {
+            if (diff > size) to_write = size;
+            else to_write = diff;
+
+            // read data from TCP and write into the file
+            lseek(fd, offset + cont, SEEK_SET);
+            size_written = write(fd, thread_data -> msg, to_write);
+
+            // update counters
+            cont = cont + size_written; // Received bytes
+            diff = to_write - cont;
+
+        } while ((diff > 0) && (size_written != 0));
+
         close(fd);
-        return;
+        FREE_AND_NULL(buffer);
+
+        // Liberar memoria y finalizar el hilo
+        free(thread_data -> msg);
+        free(thread_data -> topic);
+        free(thread_data);
     }
-
-    bzero(buffer, MAX_BUFFER_SIZE);*/
-
-    // loop...
-    do 
-    {
-        if (diff > size) to_write = size;
-        else to_write = diff;
-
-        // read data from TCP and write into the file
-        lseek(fd, offset + cont, SEEK_SET);
-        size_written = write(fd, thread_data -> msg, to_write);
-
-        // update counters
-        cont = cont + size_written; // Received bytes
-        diff = to_write - cont;
-
-    } while ((diff > 0) && (size_written != 0));
-
-    close(fd);
-    FREE_AND_NULL(buffer);
-
-    // Liberar memoria y finalizar el hilo
-    free(thread_data -> msg);
-    free(thread_data -> topic);
-    free(thread_data);
     pthread_exit(NULL);
 }
 
-// Callback para cuando se recibe un mensaje MQTT
 void on_message(struct mosquitto * mqtt, void * obj, const struct mosquitto_message * msg) 
 {
     if (NULL == obj) {
@@ -189,17 +257,18 @@ void on_message(struct mosquitto * mqtt, void * obj, const struct mosquitto_mess
     }*/
 
     // Crear una estructura para pasar al hilo
-    struct ThreadData * thread_data = (struct ThreadData * ) malloc(sizeof(struct ThreadData));
+    ThreadData * thread_data = (struct ThreadData * ) malloc(sizeof(ThreadData));
 
     thread_data -> topic = strdup(msg -> topic);
     thread_data -> msg = (char * ) malloc(msg -> payloadlen + 1);
     memcpy(thread_data -> msg, msg -> payload, msg -> payloadlen);
-    thread_data -> msg[msg -> payloadlen] = '\0'; // Asegurar que el mensaje sea una cadena C válida
+    thread_data -> msg[msg -> payloadlen] = '\0';
 
-    // Crear un nuevo hilo para procesar el mensaje
-    pthread_t thread_id;
-    pthread_create( & thread_id, NULL, process_message, (void * ) thread_data);
-    pthread_detach(thread_id); // Liberar recursos automáticamente al finalizar el hilo
+    enqueue_mq(thread_data);
+
+    /*pthread_t thread_id;
+    pthread_create( & thread_id, NULL, process_enqueue, (void * ) thread_data);
+    pthread_detach(thread_id);*/
 
     /*if (opened == 0) 
     {
@@ -226,138 +295,10 @@ void on_message(struct mosquitto * mqtt, void * obj, const struct mosquitto_mess
     //mosquitto_unsubscribe(mqtt, NULL, path);
 }
 
-/*
-void on_message(struct mosquitto *mqtt, void *obj, const struct mosquitto_message *msg)
-{
-    if (NULL == obj) {
-        printf("ERROR: obj is NULL :-( \n") ;
-    }
-    //printf("%s\t%d\n", msg->topic, msg->payloadlen);
-
-    char *xpn_time1 = getenv("XPN_TIME");
-
-    if (xpn_time1 == NULL)
-    {
-            printf("[TCP-SERVER] Error: process_client\n");
-    }
-
-    int file2 = open(xpn_time1, O_APPEND|O_WRONLY, 0777);
-    if (file2 == NULL)
-    {
-            printf("[TCP-SERVER] ERROR: process_client\n");
-    }
-
-
-    struct timeval current_time;
-    gettimeofday(&current_time, NULL);
-    time_t now = current_time.tv_sec;
-    struct tm *timeinfo;
-    timeinfo = localtime(&now);
-
-    char time_str[20];
-    strftime(time_str, sizeof(time_str), "%H:%M:%S\n", timeinfo);
-    int retw = write(file2, time_str, strlen(time_str));
-    if (retw < 0) printf("ERROR Write Dispatcher\n");
-
-    close(file2);
-
-    // Copiar el mensaje en una variable local para manipularla
-    char topic[PATH_MAX], path[PATH_MAX];
-
-    int to_write1, offset;
-
-    strncpy(topic, msg->topic, PATH_MAX);
-
-    // Encontrar la posición del último y el penúltimo slash
-    int last_slash = -1;
-    int penultimate_slash = -1;
-    for (int i = 0; topic[i] != '\0'; i++) {
-        if (topic[i] == '/') {
-            penultimate_slash = last_slash;
-            last_slash = i;
-        }
-    }
-
-    // Extraer el path y los dos enteros usando sscanf y las posiciones de los slashes
-  
-    if (penultimate_slash >= 0 && last_slash > penultimate_slash)
-    {
-        // Si hay dos slashes, extraer el path y ambos enteros
-        strncpy(path, topic, penultimate_slash);
-        path[penultimate_slash] = '\0';
-        sscanf(&topic[penultimate_slash + 1], "%d/%d", &to_write1, &offset);
-
-    }
-    else if (last_slash >= 0)
-    {
-        // Si solo hay un slash, extraer solo el path y el primer entero
-        strncpy(path, topic, last_slash);
-        path[last_slash] = '\0';
-        sscanf(&topic[last_slash + 1], "%d", &to_write1);
-        offset = 0;
-      
-    } else {
-        // Si no hay slashes, asumir que todo es el path
-        strncpy(path, topic, PATH_MAX - 1);
-        path[PATH_MAX - 1] = '\0';
-        to_write1 = 0;
-        offset = 0;
-    }
-    
-    //printf("\n%s - %s %d %d\n", topic, path, to_write1, offset);
-
-    char * buffer = NULL;
-    int size, diff, cont = 0, to_write = 0, size_written = 0;
-
-    // initialize counters
-    size = to_write1;
-    if (size > MAX_BUFFER_SIZE) {
-        size = MAX_BUFFER_SIZE;
-    }
-    diff = size - cont;
-
-    //Open file
-    int fd = open(path, O_WRONLY|O_APPEND);
-    if (fd < 0) {
-        return;
-    }
-*/
-/*// malloc a buffer of size...
-buffer = (char * ) malloc(size);
-if (NULL == buffer)
-{
-    close(fd);
-    return;
-}
-
-bzero(buffer, MAX_BUFFER_SIZE);*/
-
-// loop...
-/*do {
-        if (diff > size) to_write = size;
-        else to_write = diff;
-
-        // read data from TCP and write into the file
-        lseek(fd, offset + cont, SEEK_SET);
-        size_written = write(fd, msg->payload, to_write);
-
-        // update counters
-        cont = cont + size_written; // Received bytes
-        diff = to_write - cont;
-
-    } while ((diff > 0) && (size_written != 0));
-
-
-    close(fd);
-    FREE_AND_NULL(buffer);
-
-    mosquitto_unsubscribe(mqtt, NULL, path);
-
-}
-*/
 #endif
 
-int tcp_server_comm_init(tcp_server_param_st * params) {
+int tcp_server_comm_init(tcp_server_param_st * params) 
+{
     int ret, val;
     struct sockaddr_in server_addr;
     struct timeval t0, t1, tf;
@@ -416,7 +357,8 @@ int tcp_server_comm_init(tcp_server_param_st * params) {
 
     #ifdef HAVE_MOSQUITTO_H
 
-    if (params -> mosquitto_mode == 1) {
+    if (params -> mosquitto_mode == 1) 
+    {
         printf("[%d]\tBEGIN INIT MOSQUITTO TCP_SERVER\n\n", __LINE__);
 
         mosquitto_lib_init();
@@ -457,6 +399,16 @@ int tcp_server_comm_init(tcp_server_param_st * params) {
         //mosquitto_loop_forever(params -> mqtt, -1, 1);
         printf("[%d]\tEND INIT MOSQUITTO TCP_SERVER\n\n", __LINE__);
 
+
+        //Mosquitto pool thread
+        int nthreads_mq = 128;
+        pthread_t threads_mq[nthreads_mq];
+        queue_mq_init();
+
+        // Crear el grupo de hilos (thread pool)
+        for (int i = 0; i < nthreads_mq; i++) {
+            pthread_create( &threads_mq[i], NULL, process_message, &i );
+        }
     }
 
     #endif

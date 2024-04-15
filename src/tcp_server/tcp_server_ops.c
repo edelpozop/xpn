@@ -762,6 +762,7 @@ void tcp_server_op_write_wos(tcp_server_param_st * params, int sd, struct st_tcp
         //printf("TCP_SERVER_OPS WRITE - %s - %d\n", head -> u_st_tcp_server_msg.op_write.path, fd);
         if (fd < 0)
         {
+        	printf("TCP_SERVER_OPS WRITE - %s - %d\n", head -> u_st_tcp_server_msg.op_write.path, fd);
             req.size = -1; // TODO: check in client that -1 is treated properly... :-)
             tcp_server_comm_write_data(params, sd, (char * ) & req, sizeof(struct st_tcp_server_write_req), rank_client_id);
             return;
@@ -789,7 +790,7 @@ void tcp_server_op_write_wos(tcp_server_param_st * params, int sd, struct st_tcp
             //sem_wait(&disk_sem);
 
             /********WRITES TIMES*********/
-            /*char copy_header[20];
+            char copy_header[20];
 		    strncpy(copy_header, buffer, 20);
 
 		    if ((strstr(copy_header, "FIN") != NULL))
@@ -820,7 +821,7 @@ void tcp_server_op_write_wos(tcp_server_param_st * params, int sd, struct st_tcp
 		        strftime(time_str, sizeof(time_str), "%H:%M:%S", timeinfo);
 		        //int retw = write(file2, end_time, strlen(end_time));
 		        printf("STARTW - %s\n", time_str);
-		    }*/
+		    }
             req.size = filesystem_write(fd, buffer, to_write);
 
             //sem_post(&disk_sem);

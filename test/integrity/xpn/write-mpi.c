@@ -48,12 +48,13 @@ void *threadFunction(void *args)
     // Abrir el archivo para escritura
     pthread_mutex_lock(&m);
     fd = xpn_open(filename, O_WRONLY);
+    pthread_mutex_unlock(&m);
     if (fd < 0)
     {
         printf("[CLIENT] Error: creating file %s\n", filename);
         pthread_exit(NULL);
     }
-    pthread_mutex_unlock(&m);
+    
 
     char buf[payload_size + 1];
     memset(buf, 'a', payload_size);
@@ -63,6 +64,38 @@ void *threadFunction(void *args)
     avg_time = 0.0;
     start_time = get_time();
 
+
+    char bufStart[payload_size + 1 + 4];
+    sprintf(bufStart, "INI;");
+    strcat (bufStart, buf);
+    
+    pthread_mutex_lock(&m);
+    ret = xpn_write(fd, bufStart, payload_size + 1 + 4);
+    pthread_mutex_unlock(&m);
+    nanosleep((const struct timespec[]) {{0,100000000L}}, NULL);
+
+    for (int i = 1; i < num_its - 1; i++) 
+    {
+        pthread_mutex_lock(&m);
+        ret = xpn_write(fd, buf, payload_size + 1);
+        pthread_mutex_unlock(&m);
+        if (ret < 0)
+        {
+            printf("[CLIENT] Error: writing file %s\n",filename);
+        }
+        nanosleep((const struct timespec[]) {{0,100000000L}}, NULL);
+    }
+
+    char bufFin[payload_size + 1 + 4];
+    sprintf(bufFin, "FIN;");
+    strcat (bufFin, buf);
+
+    pthread_mutex_lock(&m);
+    ret = xpn_write(fd, bufFin, payload_size + 1 + 4);
+    pthread_mutex_unlock(&m);
+    nanosleep((const struct timespec[]) {{0,100000000L}}, NULL);
+
+/*
     // Escribir en el archivo
     for (int i = 0; i < num_its; i++) 
     {
@@ -75,8 +108,8 @@ void *threadFunction(void *args)
         }
         nanosleep((const struct timespec[]) {{0,10000000L}}, NULL);
     }
-
-    used_time           = (get_time() - start_time) - (0.010 * num_its);
+*/
+    used_time           = (get_time() - start_time) - (0.10 * num_its);
     avg_time            = used_time;
     avg_time            = avg_time / (float) num_its;
 
@@ -89,13 +122,14 @@ void *threadFunction(void *args)
 
     pthread_mutex_lock(&m);
     ret = xpn_close(fd);
+    pthread_mutex_unlock(&m);
     if (ret < 0) 
     {
         //MPI_Finalize();
         printf("[CLIENT] Error: closing file %s\n",filename);
         pthread_exit(NULL);
     }
-    pthread_mutex_unlock(&m);
+    
 
     pthread_exit(NULL);
 }
@@ -114,7 +148,7 @@ int main(int argc, char * argv[])
     ppn                     = atoi(argv[1]); 
     //mainPid                 = (rank / ppn) + 1; 
     mainPid                 = rank + 1;
-    num_its                 = 10000;
+    num_its                 = 1000;
     //printf("rank: %d; ppn: %d; mainPid: %d\n", rank, ppn, mainPid);
     payload_size            = atoi(argv[2]);
     numThreads              = ppn;
