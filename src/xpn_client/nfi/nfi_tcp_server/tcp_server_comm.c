@@ -102,7 +102,7 @@ int connection ( tcpClient_param_st * params )
     hp = gethostbyname(params -> server_name);
     if (hp == NULL)
     {
-        fprintf(stderr, "nfi_tcp_server_init: error gethostbyname %s (%s,%s)\n",
+        debug_info(stderr, "nfi_tcp_server_init: error gethostbyname %s (%s,%s)\n",
             params -> srv_name, params -> server_name, params->port_number);
         return -1;
     }
@@ -117,7 +117,7 @@ int connection ( tcpClient_param_st * params )
 
     if (ret < 0)
     {
-        fprintf(stderr, "nfi_tcp_server_init: error in connect %s (%s,%s)\n",
+        debug_info(stderr, "nfi_tcp_server_init: error in connect %s (%s,%s)\n",
                     params -> srv_name, params -> server_name, params->port_number);
         return -1;
     }
@@ -209,7 +209,7 @@ int tcpClient_comm_connect ( tcpClient_param_st * params )
     ret = connection( params );
     if (ret < 0) 
     {
-        fprintf(stderr, "ERROR: tcpClient_comm_connect: Connection failed\n");
+        debug_info(stderr, "ERROR: tcpClient_comm_connect: Connection failed\n");
         return -1;
     }
     
@@ -340,7 +340,7 @@ ssize_t tcpClient_write_data ( int fd, char * data, ssize_t size, __attribute__(
         debug_info("[NFI_TCP_COMM] client: write_data(%d): %lu = %d ID=%s --th:%d--\n", fd, (unsigned long) size, ret, msg_id, (int) pthread_self());
 
         if (ret < 0) {
-            //printf("[NFI_TCP_COMM] client: write_data(%d): %lu = %d ID=%s --th:%d--\n", fd, (unsigned long) size, ret, msg_id, (int) pthread_self());
+            //debug_info("[NFI_TCP_COMM] client: write_data(%d): %lu = %d ID=%s --th:%d--\n", fd, (unsigned long) size, ret, msg_id, (int) pthread_self());
 
             perror("tcpClient_write_data: ERROR on real_write: ");
             return ret ;
@@ -351,7 +351,7 @@ ssize_t tcpClient_write_data ( int fd, char * data, ssize_t size, __attribute__(
     } while ((ret > 0) && (cont != size));
 
     if (ret < 0) {
-        fprintf(stderr, "[NFI_TCP_COMM]  ERROR: write_data(%d): err %d  ID=%s --th:%d--\n", fd, ret, msg_id, (int) pthread_self());
+        debug_info(stderr, "[NFI_TCP_COMM]  ERROR: write_data(%d): err %d  ID=%s --th:%d--\n", fd, ret, msg_id, (int) pthread_self());
         return ret;
     }
 
@@ -405,7 +405,7 @@ ssize_t tcpClient_read_data ( int fd, char * data, ssize_t size, __attribute__((
     } while ((ret > 0) && (cont != size));
 
     if (ret < 0) {
-        fprintf(stderr, "[NFI_TCP_COMM]  client: read_data(%d): err %d  ID=%s --th:%d--\n", fd, ret, msg_id, (int) pthread_self());
+        debug_info(stderr, "[NFI_TCP_COMM]  client: read_data(%d): err %d  ID=%s --th:%d--\n", fd, ret, msg_id, (int) pthread_self());
         return ret;
     }
 

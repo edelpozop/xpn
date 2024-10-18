@@ -23,7 +23,7 @@
 //#define DEBUG 1
 
 #include "tcp_server/tcp_server_comm.h"
-
+#include <sys/time.h>
 
 /* ... Functions / Funciones ......................................... */
 
@@ -43,6 +43,15 @@ int opened = 0;
 int write_total = 0;
 //int its = 0;
 
+
+double get_time(void)
+{
+    struct timeval tp;
+    struct timezone tzp;
+
+    gettimeofday(&tp,&tzp);
+    return((double) tp.tv_sec + .000001 * (double) tp.tv_usec);
+}
 
 typedef struct 
 {
@@ -171,7 +180,8 @@ void * process_message(void * arg)
             size = MAX_BUFFER_SIZE;
         }
         diff = size - cont;
-
+        double start_time = 0.0, total_time = 0.0;
+        start_time = get_time();
         //Open file
         int fd = open(path, O_WRONLY | O_APPEND);
         if (fd < 0) 
@@ -192,7 +202,7 @@ void * process_message(void * arg)
         char copy_header[20];
         strncpy(copy_header, thread_data -> msg, 20);
 
-        if ((strstr(copy_header, "FIN") != NULL))
+        /*if ((strstr(copy_header, "FIN") != NULL))
         {
             struct timeval current_time;
             gettimeofday(&current_time, NULL);
@@ -202,7 +212,7 @@ void * process_message(void * arg)
 
             char time_str[20];
             strftime(time_str, sizeof(time_str), "%H:%M:%S", timeinfo);
-            printf("ENDW - %s\n", time_str);
+            //printf("ENDW - %s\n", time_str);
 
         }
         else if ((strstr(copy_header, "INI") != NULL))
@@ -215,8 +225,8 @@ void * process_message(void * arg)
 
             char time_str[20];
             strftime(time_str, sizeof(time_str), "%H:%M:%S", timeinfo);
-            printf("STARTW - %s\n", time_str);
-        }
+            //printf("STARTW - %s\n", time_str);
+        }*/
 
         // loop...
         do 
@@ -235,6 +245,8 @@ void * process_message(void * arg)
         } while ((diff > 0) && (size_written != 0));
 
         close(fd);
+        total_time = (get_time() - start_time);
+        printf("%s;%.5f\n", path, total_time);
         FREE_AND_NULL(buffer);
 
         // Liberar memoria y finalizar el hilo
