@@ -1,6 +1,6 @@
 
   /*
-   *  Copyright 2000-2025 Felix Garcia Carballeira, Diego Camarmas Alonso, Alejandro Calderon Mateos, Luis Miguel Sanchez Garcia, Borja Bergua Guerra, Dario Muñoz Muñoz
+   *  Copyright 2000-2026 The Expand Team.
    *
    *  This file is part of Expand.
    *
@@ -109,7 +109,7 @@ int XpnCreateMetadataExtern(struct xpn_metadata *mdata, const char *path, int ns
  *                                 v
  *
  *   (out) Real Servers     3      0       1      2
- * 
+ *
  */
 int XpnGetMetadataPos(struct xpn_metadata *mdata, int pos)
 {
@@ -147,9 +147,9 @@ int XpnUpdateMetadata(struct xpn_metadata *mdata, int nserv, struct nfi_server *
     XPN_DEBUG("Write metadata to server: %d url: %s", serv_node, url_serv);
     nfi_worker_do_write_mdata(servers[serv_node].wrk, url_serv, mdata, only_file_size);
   }
-  
+
   err = 0;
-  for (int i = 0; i < replication_level; i++)
+  for (int i = 0; i < replication_level+1; i++)
   {
     serv_node = (master_node+i) % nserv;
     res = nfiworker_wait(servers[serv_node].wrk);
@@ -165,7 +165,7 @@ int XpnUpdateMetadata(struct xpn_metadata *mdata, int nserv, struct nfi_server *
 }
 
 int XpnReadMetadata(struct xpn_metadata *mdata, int nserv, struct nfi_server *servers, const char *path, int replication_level)
-{ 
+{
   int master_node, res, i;
   char url_serv[PATH_MAX];
   XPN_DEBUG_BEGIN_CUSTOM("%s", path);
@@ -215,7 +215,7 @@ int xpn_simple_get_block_locality(char *path, off_t offset, int *url_c, char **u
   }
 
   res = XpnGetAbsolutePath(path, abs_path); // esta funcion genera el path absoluto
-  if (res < 0) 
+  if (res < 0)
   {
     errno = ENOENT;
     XPN_DEBUG_END;
@@ -285,7 +285,7 @@ int xpn_simple_free_block_locality(int *url_c, char **url_v[])
   {
     free((*url_v)[i]);
   }
-  
+
   free((*url_v));
 
   (*url_v) = NULL;

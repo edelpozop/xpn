@@ -1,6 +1,6 @@
 
 /*
- *  Copyright 2000-2025 Felix Garcia Carballeira, Diego Camarmas Alonso, Alejandro Calderon Mateos, Luis Miguel Sanchez Garcia, Borja Bergua Guerra
+ *  Copyright 2000-2026 The Expand Team.
  *
  *  This file is part of Expand.
  *
@@ -3004,6 +3004,10 @@
       {
         debug_info("[BYPASS] << After MPI_Init_thread\n");
         return PMPI_Init_thread( argc, argv, required, provided );
+      }
+      else
+      {
+        MPI_Query_thread(provided);
       }
 
       debug_info("[BYPASS] << After MPI_Init_thread\n");
